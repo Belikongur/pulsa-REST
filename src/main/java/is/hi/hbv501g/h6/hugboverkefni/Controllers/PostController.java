@@ -6,6 +6,8 @@ import is.hi.hbv501g.h6.hugboverkefni.Services.Implementations.*;
 import org.commonmark.parser.Parser;
 import org.commonmark.renderer.html.HtmlRenderer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -14,9 +16,11 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.servlet.http.HttpSession;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
-@Controller
+@RestController
 public class PostController {
     private final PostServiceImplementation postService;
     private final UserServiceImplementation userService;
@@ -44,43 +48,32 @@ public class PostController {
         this.htmlRenderer = HtmlRenderer.builder().build();
     }
 
-
     @RequestMapping(value = "/p/{slug}/{id}", method = RequestMethod.GET)
-    public String postPage(@PathVariable("slug") String slug, @PathVariable("id") long id, Model model) {
+    public ResponseEntity<Post> postPage(@PathVariable("slug") String slug, @PathVariable("id") long id, Model model) {
         Optional<Post> post = postService.getPostById(id);
-        if (!post.isPresent()) return "postNotFound";
-
-        model.addAttribute("post", post.get());
-        model.addAttribute("postReplies", post.get().getReplies());
-        model.addAttribute("reply", new Reply());
-        model.addAttribute("content", new Content());
-        model.addAttribute("sub", subService.getSubBySlug(slug));
-        return "postPage";
-    }
-
-    @RequestMapping(value = "/p/{slug}/newPost", method = RequestMethod.GET)
-    public String newPostGET(@PathVariable String slug, Post post, Model model) {
-        model.addAttribute("slug", slug);
-        return "newPost";
+        if(!post.isPresent()) return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        return new ResponseEntity<Post>(post.get(), HttpStatus.OK);
     }
 
     @RequestMapping(value = "/p/{slug}/newPost", method = RequestMethod.POST)
-    public String newPostPOST(@PathVariable String slug, String title, String text, @RequestParam("image") MultipartFile image, @RequestParam("audio") MultipartFile audio, @RequestParam("recording") String recording, Model model, HttpSession session) {
+    public ResponseEntity<Post> newPostPOST(@PathVariable String slug, String title, String text, @RequestParam("image") MultipartFile image, @RequestParam("audio") MultipartFile audio, @RequestParam("recording") String recording, Model model, HttpSession session) {
         Sub sub = subService.getSubBySlug(slug);
         String renderedText = htmlRenderer.render(markdownParser.parse(text));
         Post newPost = createPost(title, sub, renderedText, image, audio, recording, session);
         postService.addNewPost(newPost);
-        return "redirect:/p/" + slug + '/' + newPost.getPostId();
+        return new ResponseEntity<Post>(newPost, HttpStatus.OK);
     }
 
+
     @RequestMapping(value = "/p/{slug}/{id}", method = RequestMethod.POST)
-    public String replyPost(@PathVariable String slug, @PathVariable("id") long id, String text, @RequestParam("image") MultipartFile image, @RequestParam("audio") MultipartFile audio, @RequestParam("recording") String recording, Model model, RedirectAttributes redirectAttributes, HttpSession session) {
+    public ResponseEntity replyPost(@PathVariable String slug, @PathVariable("id") long id, String text, @RequestParam("image") MultipartFile image, @RequestParam("audio") MultipartFile audio, @RequestParam("recording") String recording, Model model, RedirectAttributes redirectAttributes, HttpSession session) {
         Optional<Post> post = postService.getPostById(id);
-        if (!post.isPresent()) return "postNotFound";
+        if (!post.isPresent()) return new ResponseEntity(HttpStatus.NOT_FOUND);
+
         if(text.isEmpty() && image.isEmpty() && audio.isEmpty() && recording.equals("recording")) {
-            redirectAttributes.addFlashAttribute("emptyPostReply", true);
-            return "redirect:/p/" + slug + '/' + post.get().getPostId();
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }
+
         Sub sub = subService.getSubBySlug(slug);
         String renderedText = htmlRenderer.render(markdownParser.parse(text));
         Reply reply = createReply(renderedText, sub, image, audio, recording, session);
@@ -88,18 +81,18 @@ public class PostController {
         post.get().addReply(reply);
         postService.addNewPost(post.get());
 
-        return "redirect:/p/" + slug + '/' + post.get().getPostId();
+        return new ResponseEntity(HttpStatus.CREATED);
     }
 
 
     @RequestMapping(value = "/p/{slug}/{postId}/{id}", method = RequestMethod.POST)
-    public String replyReply(@PathVariable String slug, @PathVariable("postId") long postId, @PathVariable("id") long id, String text, @RequestParam("image") MultipartFile image, @RequestParam("audio") MultipartFile audio, @RequestParam("recording") String recording, Model model, RedirectAttributes redirectAttributes, HttpSession session) {
+    public ResponseEntity replyReply(@PathVariable String slug, @PathVariable("postId") long postId, @PathVariable("id") long id, String text, @RequestParam("image") MultipartFile image, @RequestParam("audio") MultipartFile audio, @RequestParam("recording") String recording, Model model, RedirectAttributes redirectAttributes, HttpSession session) {
         Optional<Reply> prevReply = replyService.getReplyById(id);
-        if (!prevReply.isPresent()) return "postNotFound";
+        if (!prevReply.isPresent()) return new ResponseEntity(HttpStatus.NOT_FOUND);
         if(text.isEmpty() && image.isEmpty() && audio.isEmpty() && recording.equals("recording")) {
-            redirectAttributes.addFlashAttribute("emptyReplyReply", id);
-            return "redirect:/p/" + slug + '/' + postId;
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }
+
         Sub sub = subService.getSubBySlug(slug);
         String renderedText = htmlRenderer.render(markdownParser.parse(text));
         Reply reply = createReply(renderedText, sub, image, audio, recording, session);
@@ -107,20 +100,20 @@ public class PostController {
         prevReply.get().addReply(reply);
         replyService.addNewReply(prevReply.get());
 
-        return "redirect:/p/" + slug + '/' + postId;
+        return new ResponseEntity(HttpStatus.CREATED);
     }
 
     @RequestMapping(value = "/r/{id}/vote", method = RequestMethod.GET)
     @ResponseBody
-    public String getReplyVote(@PathVariable("id") long id, Model model) {
-        Reply reply = replyService.getReplyById(id).get();
+    public ResponseEntity getReplyVote(@PathVariable("id") long id, Model model) {
+        Optional<Reply> reply = replyService.getReplyById(id);
+        if(!reply.isPresent()) return new ResponseEntity(HttpStatus.NOT_FOUND);
 
-        return reply.getVote().toString();
+        return new ResponseEntity(reply.get(), HttpStatus.OK);
     }
 
     @RequestMapping(value = "/r/{id}/upvote", method = RequestMethod.POST)
     public String upvoteReply(@PathVariable("id") long id, HttpSession session) {
-
         return changeReplyVote(id, true, session);
     }
 
@@ -166,9 +159,10 @@ public class PostController {
 
     @RequestMapping(value = "/p/{id}/vote", method = RequestMethod.GET)
     @ResponseBody
-    public String getPostVote(@PathVariable("id") long id, Model model) {
-        Post post = postService.getPostById(id).get();
-        return post.getVote().toString();
+    public ResponseEntity getPostVote(@PathVariable("id") long id, Model model) {
+        Optional<Post> post = postService.getPostById(id);
+        if(!post.isPresent()) return new ResponseEntity(HttpStatus.NOT_FOUND);
+        return new ResponseEntity(post.get(), HttpStatus.OK);
     }
 
     @RequestMapping(value = "/p/{id}/upvote", method = RequestMethod.POST)

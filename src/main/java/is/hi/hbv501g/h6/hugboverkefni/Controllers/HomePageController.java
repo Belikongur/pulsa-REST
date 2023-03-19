@@ -5,14 +5,17 @@ import is.hi.hbv501g.h6.hugboverkefni.Services.Implementations.PostServiceImplem
 import is.hi.hbv501g.h6.hugboverkefni.Services.Implementations.ReplyServiceImplementation;
 import is.hi.hbv501g.h6.hugboverkefni.Services.Implementations.UserServiceImplementation;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpSession;
 import java.util.List;
 
-@Controller
+@RestController
 public class HomePageController {
     private final PostServiceImplementation postService;
     private final UserServiceImplementation userService;
@@ -25,12 +28,10 @@ public class HomePageController {
         this.replyService = replyService;
     }
 
-    @RequestMapping("/")
-    public String frontPage(Model model) {
-        List<Post> allPosts = postService.getPostsOrderedByCreated();
-
-        model.addAttribute("posts", allPosts);
-
-        return "frontPage";
+    @RequestMapping("/api")
+    public ResponseEntity<List<Post>> frontPage(Model model) {
+        List<Post> posts = postService.getPostsOrderedByCreated();
+        if(posts.isEmpty()) return new ResponseEntity(HttpStatus.NOT_FOUND);
+        return new ResponseEntity<List<Post>>(posts, HttpStatus.OK);
     }
 }
