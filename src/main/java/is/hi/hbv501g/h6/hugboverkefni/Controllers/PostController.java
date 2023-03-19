@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
+@RequestMapping("/api")
 public class PostController {
     private final PostServiceImplementation postService;
     private final UserServiceImplementation userService;
@@ -49,19 +50,18 @@ public class PostController {
     }
 
     @RequestMapping(value = "/p/{slug}/{id}", method = RequestMethod.GET)
-    public ResponseEntity<Post> postPage(@PathVariable("slug") String slug, @PathVariable("id") long id, Model model) {
+    public Post postPage(@PathVariable("slug") String slug, @PathVariable("id") long id, Model model) {
         Optional<Post> post = postService.getPostById(id);
-        if(!post.isPresent()) return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        return new ResponseEntity<Post>(post.get(), HttpStatus.OK);
+        return post.get();
     }
 
     @RequestMapping(value = "/p/{slug}/newPost", method = RequestMethod.POST)
-    public ResponseEntity<Post> newPostPOST(@PathVariable String slug, String title, String text, @RequestParam("image") MultipartFile image, @RequestParam("audio") MultipartFile audio, @RequestParam("recording") String recording, Model model, HttpSession session) {
+    public Post newPostPOST(@PathVariable String slug, String title, String text, @RequestParam("image") MultipartFile image, @RequestParam("audio") MultipartFile audio, @RequestParam("recording") String recording, Model model, HttpSession session) {
         Sub sub = subService.getSubBySlug(slug);
         String renderedText = htmlRenderer.render(markdownParser.parse(text));
         Post newPost = createPost(title, sub, renderedText, image, audio, recording, session);
         postService.addNewPost(newPost);
-        return new ResponseEntity<Post>(newPost, HttpStatus.OK);
+        return newPost;
     }
 
 

@@ -29,9 +29,7 @@ public class HomePageController {
     }
 
     @RequestMapping("/api")
-    public ResponseEntity<List<Post>> frontPage(Model model) {
-        List<Post> posts = postService.getPostsOrderedByCreated();
-        if(posts.isEmpty()) return new ResponseEntity(HttpStatus.NOT_FOUND);
-        return new ResponseEntity<List<Post>>(posts, HttpStatus.OK);
+    public List<Post> frontPage(Model model) {
+        return postService.getPostsOrderedByCreated();
     }
 }
