@@ -9,8 +9,11 @@ import is.hi.hbv501g.h6.hugboverkefni.Services.Implementations.PostServiceImplem
 import is.hi.hbv501g.h6.hugboverkefni.Services.Implementations.ReplyServiceImplementation;
 import is.hi.hbv501g.h6.hugboverkefni.Services.Implementations.SubServiceImplementation;
 import is.hi.hbv501g.h6.hugboverkefni.Services.Implementations.UserServiceImplementation;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -20,11 +23,9 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
-@Controller
+@RestController
 public class UserController {
 
     private final UserServiceImplementation userService;
@@ -46,23 +47,6 @@ public class UserController {
         this.replyService = replyService;
     }
 
-    @RequestMapping(value = "/username", method = RequestMethod.GET)
-    @ResponseBody
-    public String getUsername(HttpSession session) {
-        User user = (User) (session.getAttribute("user"));
-
-        if (user == null) {
-            return "";
-        } else {
-            return user.getUserName();
-        }
-    }
-
-    @RequestMapping(value = "/register", method = RequestMethod.GET)
-    public String registerGET(User user) {
-        return "register";
-    }
-
     @RequestMapping(value = "/register", method = RequestMethod.POST)
     public String registerPOST(@Valid User user, BindingResult result) {
         user.setAvatar("https://res.cloudinary.com/dc6h0nrwk/image/upload/v1667864633/ldqgfkftspzy5yeyzube.png");
@@ -76,11 +60,6 @@ public class UserController {
         }
 
         return "redirect:/registrationSuccess";
-    }
-
-    @RequestMapping(name = "/login", value = "/login", method = RequestMethod.GET)
-    public String loginGET(User user) {
-        return "login";
     }
 
     @RequestMapping(value = {"/login"}, method = RequestMethod.POST)
@@ -104,18 +83,6 @@ public class UserController {
         return "redirect:/";
     }
 
-    @RequestMapping(value = "/registrationSuccess", method = RequestMethod.GET)
-    public String registrationSuccessGET() {
-        return "registrationSuccess";
-    }
-
-    @RequestMapping(value = "/user/{id}/edit", method = RequestMethod.GET)
-    public String editAccountGET(@PathVariable("id") long id, HttpSession session) {
-        User user = (User) session.getAttribute("user");
-        if (user.getUser_id() != id) return "postNotFound";
-        return "editAccount";
-    }
-
     @RequestMapping(value = "/user/{id}/edit", method = RequestMethod.POST)
     public String editAccountPOST(String realName, HttpSession session, Model model) {
         User user = (User) session.getAttribute("user");
@@ -126,11 +93,6 @@ public class UserController {
         model.addAttribute("updated", true);
 
         return "editAccount";
-    }
-
-    @RequestMapping(value = "/user/{id}/edit/avatar", method = RequestMethod.GET)
-    public String changeAvatarGET() {
-        return "editAccountAvatar";
     }
 
     @RequestMapping(value = "/user/{id}/edit/avatar", method = RequestMethod.POST)
@@ -146,11 +108,6 @@ public class UserController {
         userService.editAvatar(user);
 
         return "editAccountAvatar";
-    }
-
-    @RequestMapping(value = "/user/{id}/edit/username", method = RequestMethod.GET)
-    public String changeUsernameGET() {
-        return "editAccountUsername";
     }
 
     @RequestMapping(value = "/user/{id}/edit/username", method = RequestMethod.POST)
@@ -173,11 +130,6 @@ public class UserController {
         return "editAccountUsername";
     }
 
-    @RequestMapping(value = "/user/{id}/edit/password", method = RequestMethod.GET)
-    public String changePasswordGET() {
-        return "editAccountPassword";
-    }
-
     @RequestMapping(value = "/user/{id}/edit/password", method = RequestMethod.POST)
     public String changePasswordPOST(String password, HttpSession session, Model model) {
         User user = (User) session.getAttribute("user");
@@ -189,11 +141,6 @@ public class UserController {
         userService.editPassword(user);
 
         return "editAccountPassword";
-    }
-
-    @RequestMapping(value = "/user/{id}/edit/email", method = RequestMethod.GET)
-    public String changeEmailGET() {
-        return "editAccountEmail";
     }
 
     @RequestMapping(value = "/user/{id}/edit/email", method = RequestMethod.POST)
@@ -212,25 +159,26 @@ public class UserController {
         model.addAttribute("updated", true);
         return "editAccountEmail";
     }
-    @RequestMapping(value = "/u/{username}", method = RequestMethod.GET)
-    public String userPageGET(Model model, @PathVariable("username") String username) {
+
+    @RequestMapping(value = "/api/u/{username}")
+    public ResponseEntity<Map<String, Object>> userPageGET(@PathVariable("username") String username) {
         Optional<User> theUser = userService.getUserByUserName(username);
 
-        if (!theUser.isPresent()) return "userNotFound";
+        if (!theUser.isPresent()) return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+
         User user = userService.getUserObjectByUserName(username);
         List<Post> posts = postService.getPostsByUser(user);
         List<Sub> subs = user.getSubs();
         List<Reply> replies = replyService.getRepliesByUser(user);
-        model.addAttribute("user", user);
-        model.addAttribute("userName", theUser.get().getUserName());
-        model.addAttribute("email", theUser.get().getEmail());
-        model.addAttribute("realName", theUser.get().getRealName());
-        model.addAttribute("avatar", theUser.get().getAvatar());
-        model.addAttribute("created", theUser.get().getTime());
-        model.addAttribute("posts", posts);
-        model.addAttribute("subs", subs);
-        model.addAttribute("replies", replies);
-        return "userPage";
+
+        Map<String, Object> map = new HashMap<>();
+
+        map.put("user", user);
+        map.put("posts", posts);
+        map.put("subs", subs);
+        map.put("replies", replies);
+
+        return new ResponseEntity<>(map, HttpStatus.OK);
     }
 }
 

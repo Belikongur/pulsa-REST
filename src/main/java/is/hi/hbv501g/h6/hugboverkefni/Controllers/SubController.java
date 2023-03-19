@@ -8,19 +8,20 @@ import is.hi.hbv501g.h6.hugboverkefni.Services.Implementations.PostServiceImplem
 import is.hi.hbv501g.h6.hugboverkefni.Services.Implementations.SubServiceImplementation;
 import is.hi.hbv501g.h6.hugboverkefni.Services.Implementations.UserServiceImplementation;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpSession;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
-@Controller
+@RestController
 public class SubController {
 
     private final PostServiceImplementation postService;
@@ -39,39 +40,24 @@ public class SubController {
         this.userService = userService;
     }
 
-    @RequestMapping(value = "/p/", method = RequestMethod.GET)
-    public String subIndex(Model model) {
+    @RequestMapping(value = "/api/p/", method = RequestMethod.GET)
+    public ResponseEntity<List<Sub>> subIndex() {
         List<Sub> allSubs = subService.getSubs();
 
-        model.addAttribute("subs", allSubs);
-
-        return "subIndex";
+        return new ResponseEntity<>(allSubs, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/p/{slug}", method = RequestMethod.GET)
-    public String subPage(@PathVariable("slug") String slug, Model model, HttpSession session) {
+    public ResponseEntity<Map<String, Object>> subPage(@PathVariable("slug") String slug) {
         Sub sub = subService.getSubBySlug(slug);
         List<Post> posts = postService.getSubPostsOrderedByCreated(sub);
 
-        model.addAttribute("sub", sub);
-        model.addAttribute("posts", posts);
+        Map<String, Object> map = new HashMap<>();
 
-        if (session.getAttribute("user") == null) return "subPage";
+        map.put("sub", sub);
+        map.put("posts", posts);
 
-        User user = (User) session.getAttribute("user");
-
-        // Cursed session fix
-        User dbUser = userService.getUserObjectByUserName(user.getUserName());
-        boolean following = dbUser.isFollowing(sub);
-        model.addAttribute("following", following);
-
-        return "subPage";
-    }
-
-    @RequestMapping(value = "/newSub", method = RequestMethod.GET)
-    public String newSubGET(Sub sub) {
-
-        return "newSub";
+        return new ResponseEntity<>(map, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/newSub", method = RequestMethod.POST)
