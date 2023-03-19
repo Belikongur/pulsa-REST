@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpSession;
 import java.util.List;
 
-@RestController
+@Controller
 public class HomePageController {
     private final PostServiceImplementation postService;
     private final UserServiceImplementation userService;
@@ -28,8 +28,10 @@ public class HomePageController {
         this.replyService = replyService;
     }
 
-    @RequestMapping("/api")
-    public List<Post> frontPage(Model model) {
-        return postService.getPostsOrderedByCreated();
+    @RequestMapping("/")
+    public String frontPage(Model model) {
+        List<Post> posts = postService.getPostsOrderedByCreated();
+        model.addAttribute("posts", posts);
+        return "frontPage";
     }
 }
