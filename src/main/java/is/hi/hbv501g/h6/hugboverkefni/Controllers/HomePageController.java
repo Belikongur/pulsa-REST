@@ -28,15 +28,8 @@ public class HomePageController {
         this.replyService = replyService;
     }
 
-    @RequestMapping("/")
-    public String frontPage(Model model) {
-        List<Post> posts = postService.getPostsOrderedByCreated();
-        model.addAttribute("posts", posts);
-        return "frontPage";
-    }
-
     @RequestMapping("/api/v1")
-    public List<Post> findAllPosts(Model model) {
+    public List<Post> findAllPosts() {
         return postService.getPostsOrderedByCreated();
     }
 }
