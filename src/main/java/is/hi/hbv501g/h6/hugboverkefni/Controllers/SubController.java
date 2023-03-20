@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-@RestController
+@Controller
 public class SubController {
 
     private final PostServiceImplementation postService;
@@ -40,24 +40,39 @@ public class SubController {
         this.userService = userService;
     }
 
-    @RequestMapping(value = "/api/p/", method = RequestMethod.GET)
-    public ResponseEntity<List<Sub>> subIndex() {
+    @RequestMapping(value = "/p/", method = RequestMethod.GET)
+    public String subIndex(Model model) {
         List<Sub> allSubs = subService.getSubs();
 
-        return new ResponseEntity<>(allSubs, HttpStatus.OK);
+        model.addAttribute("subs", allSubs);
+
+        return "subIndex";
     }
 
     @RequestMapping(value = "/p/{slug}", method = RequestMethod.GET)
-    public ResponseEntity<Map<String, Object>> subPage(@PathVariable("slug") String slug) {
+    public String subPage(@PathVariable("slug") String slug, Model model, HttpSession session) {
         Sub sub = subService.getSubBySlug(slug);
         List<Post> posts = postService.getSubPostsOrderedByCreated(sub);
 
-        Map<String, Object> map = new HashMap<>();
+        model.addAttribute("sub", sub);
+        model.addAttribute("posts", posts);
 
-        map.put("sub", sub);
-        map.put("posts", posts);
+        if (session.getAttribute("user") == null) return "subPage";
 
-        return new ResponseEntity<>(map, HttpStatus.OK);
+        User user = (User) session.getAttribute("user");
+
+        // Cursed session fix
+        User dbUser = userService.getUserObjectByUserName(user.getUserName());
+        boolean following = dbUser.isFollowing(sub);
+        model.addAttribute("following", following);
+
+        return "subPage";
+    }
+
+    @RequestMapping(value = "/newSub", method = RequestMethod.GET)
+    public String newSubGET(Sub sub) {
+
+        return "newSub";
     }
 
     @RequestMapping(value = "/newSub", method = RequestMethod.POST)
