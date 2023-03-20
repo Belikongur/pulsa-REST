@@ -103,7 +103,9 @@ public class RestPostController extends BaseController {
             replyService.addNewReply(reply);
             post.get().addReply(reply);
             postService.addNewPost(post.get());
-            return new ResponseEntity(HttpStatus.CREATED);
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(reply);
         } catch (IllegalStateException e) {
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
@@ -137,7 +139,9 @@ public class RestPostController extends BaseController {
             replyService.addNewReply(reply);
             prevReply.get().addReply(reply);
             replyService.addNewReply(prevReply.get());
-            return new ResponseEntity(HttpStatus.CREATED);
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(reply);
         } catch (IllegalStateException e) {
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
