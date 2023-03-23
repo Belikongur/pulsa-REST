@@ -6,17 +6,21 @@ import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.Reply;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.Sub;
 import is.hi.hbv501g.h6.hugboverkefni.Services.CloudinaryService;
 import is.hi.hbv501g.h6.hugboverkefni.Services.Implementations.*;
+import okhttp3.MultipartBody;
+import okio.Utf8;
 import org.hibernate.mapping.Any;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.json.GsonJsonParser;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpSession;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.io.File;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -38,47 +42,31 @@ public class RestPostController extends BaseController {
         return postService.getPostsOrderedByCreated();
     }
 
-    @ResponseStatus(HttpStatus.OK)
-    @GetMapping(value = "/p/{slug}/{id}")
-    public Post getPost(@PathVariable String slug, @PathVariable long id) {
-        return postService.getPostById(id).get();
-    }
 
-    @PostMapping(value = "/p/{slug}/newPost")
-    public ResponseEntity createNewPost(@PathVariable String slug,
-                              @RequestBody Map<String, Object> map,
-                              HttpSession session) {
-        String title = "", text = "", recording = "";
-        MultipartFile image = null, audio = null;
-        if(map.containsKey("title")) title = map.get("title").toString();
-        if(map.containsKey("text")) text = map.get("text").toString();
-        if(map.containsKey("recording")) recording = map.get("recording").toString();
-        if(map.containsKey("audio")) audio = (MultipartFile) map.get("audio");
-        if(map.containsKey("image")) image = (MultipartFile) map.get("image");
-
-
-        System.out.println("Contents of map");
-        System.out.println(map);
-        map.forEach((field, value)-> {
-            System.out.println(field + ": " + value);
-        });
-
+    @RequestMapping(value = "/p/{slug}/newPost", method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = "application/json")
+    public @ResponseBody ResponseEntity<Post> createNewPost(@PathVariable String slug,
+                                              @RequestPart String title,
+                                              @RequestPart String text,
+                                              @RequestPart MultipartFile image,
+                                              @RequestPart MultipartFile audio,
+                                              HttpSession session) {
+        String recording = "";
         Sub sub = subService.getSubBySlug(slug);
         Post post = createPost(title, sub, text, image, audio, recording, session);
+
         try {
             postService.addNewPost(post);
             return ResponseEntity
                     .status(HttpStatus.CREATED)
                     .body(post);
-
         } catch (IllegalStateException e) {
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
-                    .body(e.getMessage());
+                    .body(post);
         }
     }
 
-    @PostMapping(value = "/p/{slug}/{id}")
+    @RequestMapping(value = "/r/{slug}/{id}", method = RequestMethod.POST)
     public ResponseEntity replyPost(@PathVariable String slug,
                                     @PathVariable long id,
                                     Map<String, Object> map,
@@ -112,6 +100,16 @@ public class RestPostController extends BaseController {
                     .body(e);
         }
     }
+
+    @ResponseStatus(HttpStatus.OK)
+    @GetMapping(value = "/p/{slug}/{id}")
+    public Post getPost(@PathVariable String slug, @PathVariable long id) {
+        return postService.getPostById(id).get();
+    }
+
+
+
+
 
     @PostMapping("/p/{slug}/{postId}/{id}")
     public ResponseEntity replyReply(@PathVariable String slug,

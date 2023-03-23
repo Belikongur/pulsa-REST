@@ -60,7 +60,7 @@ public class RestUserController {
         if (result.hasErrors()) {
             List<String> errors = new ArrayList<String>();
             result.getFieldErrors().forEach(e -> {
-                errors.add(e.getDefaultMessage());
+                errors.add(e.getField() + " " +e.getDefaultMessage());
             });
 
             return ResponseEntity
