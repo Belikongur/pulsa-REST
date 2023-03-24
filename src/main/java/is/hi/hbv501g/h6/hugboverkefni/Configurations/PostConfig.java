@@ -3,27 +3,42 @@ package is.hi.hbv501g.h6.hugboverkefni.Configurations;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.*;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Repositories.PostRepository;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Repositories.ReplyRepository;
+import is.hi.hbv501g.h6.hugboverkefni.Persistence.Repositories.RoleRepository;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Repositories.SubRepository;
 import is.hi.hbv501g.h6.hugboverkefni.Services.Implementations.UserServiceImplementation;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Configuration
 public class PostConfig {
+    @Autowired
+    RoleRepository roleRepository;
 
     @Bean
     CommandLineRunner commandLineRunner(PostRepository postRepository, UserServiceImplementation userService, ReplyRepository replyRepository, SubRepository subRepository) {
         return args -> {
-            User anon = new User("Anonymous",
+            User anon = new User("Anon",
                     "anon",
                     "Anonymous",
                     "https://res.cloudinary.com/dc6h0nrwk/image/upload/v1666386282/xov6nkbsxf3hmhuqb3jn.png",
                     "anon@anon.com");
+            Role adminRole = new Role(ERole.ROLE_ADMIN);
+            Role userRole = new Role(ERole.ROLE_USER);
+            Role anonRole = new Role(ERole.ROLE_ANON);
+            roleRepository.save(adminRole);
+            roleRepository.save(userRole);
+            roleRepository.save(anonRole);
+            Set<Role> anonRoles = new HashSet<>();
+            anonRoles.add(anonRole);
+            anon.setRoles(anonRoles);
             userService.addDefaultUser(anon);
             Sub sub = new Sub("Háskólalífið");
             sub.setImage("https://res.cloudinary.com/dc6h0nrwk/image/upload/v1665799070/i3g9v3wdjlzbeaxvhihc.jpg");

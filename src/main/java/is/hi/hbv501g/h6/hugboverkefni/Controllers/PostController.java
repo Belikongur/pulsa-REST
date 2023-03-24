@@ -13,7 +13,6 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.servlet.http.HttpSession;
-import java.util.ArrayList;
 import java.util.Optional;
 
 
@@ -65,7 +64,8 @@ public class PostController extends BaseController {
                               HttpSession session) {
         Sub sub = subService.getSubBySlug(slug);
         String renderedText = htmlRenderer.render(markdownParser.parse(text));
-        Post newPost = createPost(title, sub, renderedText, image, audio, recording, session);
+        User user = (User) session.getAttribute("user");
+        Post newPost = createPost(title, sub, renderedText, image, audio, recording, user);
         postService.addNewPost(newPost);
         return "redirect:/p/" + slug + '/' + newPost.getPostId();
     }
@@ -88,7 +88,8 @@ public class PostController extends BaseController {
         }
         Sub sub = subService.getSubBySlug(slug);
         String renderedText = htmlRenderer.render(markdownParser.parse(text));
-        Reply reply = createReply(renderedText, sub, image, audio, recording, session);
+        User user = (User) session.getAttribute("user");
+        Reply reply = createReply(renderedText, sub, image, audio, recording, user);
         replyService.addNewReply(reply);
         post.get().addReply(reply);
         postService.addNewPost(post.get());
@@ -115,7 +116,8 @@ public class PostController extends BaseController {
         }
         Sub sub = subService.getSubBySlug(slug);
         String renderedText = htmlRenderer.render(markdownParser.parse(text));
-        Reply reply = createReply(renderedText, sub, image, audio, recording, session);
+        User user = (User) session.getAttribute("user");
+        Reply reply = createReply(renderedText, sub, image, audio, recording, user);
         replyService.addNewReply(reply);
         prevReply.get().addReply(reply);
         replyService.addNewReply(prevReply.get());

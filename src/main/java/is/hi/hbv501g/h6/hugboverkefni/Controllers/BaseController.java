@@ -83,20 +83,17 @@ public abstract class BaseController {
         return "frontPage.html";
     }
 
-    protected Post createPost(String title, Sub sub, String text, MultipartFile image, MultipartFile audio, String recording, HttpSession session) {
+    protected Post createPost(String title, Sub sub, String text, MultipartFile image, MultipartFile audio, String recording, User user) {
         Content content = createContent(text, image, audio, recording);
 
-        User user = (User) session.getAttribute("user");
         if (user != null) return new Post(title, sub, content, user, new ArrayList<Voter>(), new ArrayList<Reply>());
-
         return new Post(title, sub, content, userService.getAnon(), new ArrayList<Voter>(), new ArrayList<Reply>());
     }
 
 
-    protected Reply createReply(String text, Sub sub, MultipartFile image, MultipartFile audio, String recording, HttpSession session) {
+    protected Reply createReply(String text, Sub sub, MultipartFile image, MultipartFile audio, String recording, User user) {
         Content content = createContent(text, image, audio, recording);
 
-        User user = (User) session.getAttribute("user");
         if (user != null) return new Reply(content, user, new ArrayList<Voter>(), new ArrayList<Reply>(), sub);
 
         return new Reply(content, userService.getAnon(), new ArrayList<Voter>(), new ArrayList<Reply>(), sub);
@@ -108,7 +105,7 @@ public abstract class BaseController {
         String recordingUrl = "";
         if (image != null && !image.isEmpty()) imgUrl = cloudinaryService.securify(cloudinaryService.uploadImage(image));
         if (audio != null && !audio.isEmpty()) audioUrl = cloudinaryService.securify(cloudinaryService.uploadAudio(audio));
-        if (recording.length() != 9 && !recording.isEmpty()) recordingUrl = cloudinaryService.securify(cloudinaryService.uploadRecording(recording));
+        if (recording != null && recording.length() != 9) recordingUrl = cloudinaryService.securify(cloudinaryService.uploadRecording(recording));
         Content c = new Content(text, imgUrl, audioUrl, recordingUrl);
         return c;
     }

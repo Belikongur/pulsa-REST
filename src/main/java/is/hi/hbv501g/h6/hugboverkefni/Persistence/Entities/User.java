@@ -2,6 +2,8 @@ package is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities;
 
 import org.hibernate.annotations.Fetch;
 import org.springframework.data.repository.cdi.Eager;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -12,8 +14,7 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Entity
 @Table(name = "users")
@@ -33,7 +34,7 @@ public class User {
     @NotBlank(message = "Field must not be empty")
     @Size(min = 3, message = "{Size.name}")
     @Column(unique = true)
-    private String userName;
+    private String username;
 
     @NotBlank(message = "Field must not be empty")
     @Size(min = 2, message = "{Size.pass}")
@@ -46,6 +47,12 @@ public class User {
     @Email
     @Column(unique = true)
     private String email;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable( name="user_roles",
+                joinColumns = @JoinColumn(name="user_id"),
+                inverseJoinColumns = @JoinColumn(name="role_id"))
+    private Set<Role> roles = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.EAGER)
     private List<Sub> subs = new ArrayList<Sub>();
@@ -65,7 +72,7 @@ public class User {
     /**
      * User entity
      *
-     * @param userName String Unique user identifier
+     * @param username String Unique user identifier
      * @param password String Top secret password
      * @param realName String Users real name
      * @param avatar   String DataURL of uploaded image
@@ -73,12 +80,12 @@ public class User {
      * @param email    String email for user
      * @return User
      */
-    public User(String userName,
+    public User(String username,
                 String password,
                 String realName,
                 String avatar,
                 String email) {
-        this.userName = userName;
+        this.username = username;
         this.password = password;
         this.realName = realName;
         this.avatar = avatar;
@@ -95,12 +102,13 @@ public class User {
         this.user_id = id;
     }
 
-    public String getUserName() {
-        return userName;
+
+    public String getUsername() {
+        return username;
     }
 
-    public void setUserName(String userName) {
-        this.userName = userName;
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public String getRealName() {
@@ -191,4 +199,13 @@ public class User {
     public void setPassword(String password) {
         this.password = password;
     }
+
+    public Set<Role> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(Set<Role> roles) {
+        this.roles = roles;
+    }
+
 }

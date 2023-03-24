@@ -55,7 +55,7 @@ public class UserController {
         if (user == null) {
             return "";
         } else {
-            return user.getUserName();
+            return user.getUsername();
         }
     }
 
@@ -160,7 +160,7 @@ public class UserController {
 
         if (username.isBlank()) return "editAccountUsername";
 
-        user.setUserName(username);
+        user.setUsername(username);
         try {
             userService.editUserName(user);
         } catch (DuplicateKeyException e) {
@@ -169,7 +169,7 @@ public class UserController {
         }
 
         model.addAttribute("updated", true);
-        user.setUserName(username);
+        user.setUsername(username);
 
         return "editAccountUsername";
     }
@@ -215,7 +215,7 @@ public class UserController {
     }
     @RequestMapping(value = "/u/{username}", method = RequestMethod.GET)
     public String userPageGET(Model model, @PathVariable("username") String username) {
-        Optional<User> theUser = userService.getUserByUserName(username);
+        Optional<User> theUser = userService.getUserByUsername(username);
 
         if (!theUser.isPresent()) return "userNotFound";
         User user = userService.getUserObjectByUserName(username);
@@ -223,7 +223,7 @@ public class UserController {
         List<Sub> subs = user.getSubs();
         List<Reply> replies = replyService.getRepliesByUser(user);
         model.addAttribute("user", user);
-        model.addAttribute("userName", theUser.get().getUserName());
+        model.addAttribute("userName", theUser.get().getUsername());
         model.addAttribute("email", theUser.get().getEmail());
         model.addAttribute("realName", theUser.get().getRealName());
         model.addAttribute("avatar", theUser.get().getAvatar());

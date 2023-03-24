@@ -1,191 +1,250 @@
 package is.hi.hbv501g.h6.hugboverkefni.Controllers.RestAPI;
 
-import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.Post;
-import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.Reply;
-import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.Sub;
-import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.User;
+import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.*;
+import is.hi.hbv501g.h6.hugboverkefni.Persistence.Repositories.RoleRepository;
+import is.hi.hbv501g.h6.hugboverkefni.Persistence.Repositories.UserRepository;
+import is.hi.hbv501g.h6.hugboverkefni.Persistence.UserDetailsImplementation;
 import is.hi.hbv501g.h6.hugboverkefni.Services.CloudinaryService;
 import is.hi.hbv501g.h6.hugboverkefni.Services.Implementations.PostServiceImplementation;
 import is.hi.hbv501g.h6.hugboverkefni.Services.Implementations.ReplyServiceImplementation;
 import is.hi.hbv501g.h6.hugboverkefni.Services.Implementations.SubServiceImplementation;
 import is.hi.hbv501g.h6.hugboverkefni.Services.Implementations.UserServiceImplementation;
+import is.hi.hbv501g.h6.hugboverkefni.Services.UserService;
+import is.hi.hbv501g.h6.hugboverkefni.Utils.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
+import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.ERole;
+import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.Role;
+import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.User;
 import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1")
 public class RestUserController {
 
+    AuthenticationManager authenticationManager;
     private final UserServiceImplementation userService;
-
+    private final UserRepository userRepository;
     private final CloudinaryService cloudinaryService;
     private final PostServiceImplementation postService;
     private final SubServiceImplementation subService;
     private final ReplyServiceImplementation replyService;
+    private final RoleRepository roleRepository;
+    PasswordEncoder encoder;
+    JwtUtils jwtUtils;
+
     @Autowired
     public RestUserController(UserServiceImplementation userService,
-                          CloudinaryService cloudinaryService,
-                          PostServiceImplementation postService,
-                          SubServiceImplementation subService,
-                          ReplyServiceImplementation replyService) {
+                              CloudinaryService cloudinaryService,
+                              PostServiceImplementation postService,
+                              SubServiceImplementation subService,
+                              ReplyServiceImplementation replyService,
+                              RoleRepository roleRepository,
+                              JwtUtils jwtUtils,
+                              PasswordEncoder passwordEncoder,
+                              AuthenticationManager authenticationManager,
+                              UserRepository userRepository) {
         this.userService = userService;
         this.cloudinaryService = cloudinaryService;
         this.postService = postService;
         this.subService = subService;
+        this.userRepository = userRepository;
         this.replyService = replyService;
+        this.roleRepository = roleRepository;
+        this.jwtUtils = jwtUtils;
+        this.encoder = passwordEncoder;
+        this.authenticationManager = authenticationManager;
     }
 
     @RequestMapping(value = "/register", method = RequestMethod.POST)
-    public ResponseEntity registerPOST(@Valid @RequestBody User user, BindingResult result) {
+    public @ResponseBody ResponseEntity registerPOST(@Valid User user, BindingResult result) {
+        if(userService.existsByUsername(user.getUsername())) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body("Error: Username already taken");
+        }
+
+        if(userService.existsByEmail(user.getEmail())) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body("Error: Email already taken");
+        }
+
         user.setAvatar("https://res.cloudinary.com/dc6h0nrwk/image/upload/v1667864633/ldqgfkftspzy5yeyzube.png");
         user.setCreated();
         user.setUpdated();
+        User newUser = new User(user.getUsername(), encoder.encode(user.getPassword()), user.getRealName(), user.getAvatar(), user.getEmail());
+        Set<Role> roles = new HashSet<>();
+        Role userRole = roleRepository.findByName(ERole.ROLE_USER)
+                .orElseThrow(() -> new RuntimeException("Error: Role is not found"));
+        roles.add(userRole);
+        newUser.setRoles(roles);
 
-        userService.addNewUser(user, result);
-
-        if (result.hasErrors()) {
-            List<String> errors = new ArrayList<String>();
-            result.getFieldErrors().forEach(e -> {
-                errors.add(e.getField() + " " +e.getDefaultMessage());
-            });
-
+        try {
+            userRepository.save(newUser);
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(newUser);
+        } catch (IllegalArgumentException e) {
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
-                    .body(errors);
+                    .body(e.getMessage());
         }
 
-        return new ResponseEntity(HttpStatus.OK);
+
+
     }
 
     @RequestMapping(value = {"/login"}, method = RequestMethod.POST)
-    public String loginPOST(User user, HttpSession session) {
-        User auth = userService.loginUser(user);
+    public @ResponseBody ResponseEntity authenticateUser(@RequestPart String username,
+                                                         @RequestPart String password) {
+        Authentication auth = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
+        SecurityContextHolder.getContext().setAuthentication(auth);
+        String jwt = jwtUtils.generateJwtToken(auth);
 
-        if (auth == null) return "redirect:login?error";
+        UserDetailsImplementation userDetails = (UserDetailsImplementation) auth.getPrincipal();
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(item -> item.getAuthority())
+                .collect(Collectors.toList());
 
-        // Session time limit er 1800s eða 30m
-        // Breyta session time limit -> session.setMaxInactiveInterval(sec);
-        session.setAttribute("user", auth);
-
-        return "redirect:/";
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .header(
+                        HttpHeaders.AUTHORIZATION,
+                        jwt
+                )
+                .body(userDetails);
     }
-
+/*
     @RequestMapping(value = "/logout", method = RequestMethod.GET)
-    public String logout(HttpSession session) {
-        if (session.getAttribute("user") != null) {
-            session.invalidate();
-        }
-        return "redirect:/";
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    public ResponseEntity logout() {
+        SecurityContextHolder.clearContext();
+        return new ResponseEntity(HttpStatus.OK);
     }
+*/
+    @RequestMapping(value = "/user/{id}/edit", method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = "application/json")
+    @PreAuthorize("hasRole('USER')")
+    public @ResponseBody ResponseEntity editAccountPOST(@RequestPart(value = "realName", required = false) String realName) {
+        if(realName == null) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("real name cannot be empty");
 
-    @RequestMapping(value = "/user/{id}/edit", method = RequestMethod.POST)
-    public String editAccountPOST(String realName, HttpSession session, Model model) {
-        User user = (User) session.getAttribute("user");
-        if (realName.equals(user.getRealName())) return "editAccount";
-
+        UserDetails userDetails = getUserDetails();
+        User user = getUserFromUserDetails(userDetails);
+        if (realName.equals(user.getRealName())) return ResponseEntity.status(HttpStatus.OK).body(realName);
         user.setRealName(realName);
         userService.editRealName(user);
-        model.addAttribute("updated", true);
-
-        return "editAccount";
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(user);
     }
 
     @RequestMapping(value = "/user/{id}/edit/avatar", method = RequestMethod.POST)
-    public String changeAvatarPOST(@RequestParam MultipartFile avatar, HttpSession session, Model model) {
-        if (avatar.isEmpty()) {
-            model.addAttribute("avatar", true);
-            return "editAccountAvatar";
-        }
+    @PreAuthorize("hasRole('USER')")
+    public @ResponseBody ResponseEntity changeAvatarPOST(@RequestPart MultipartFile avatar) {
+        UserDetails userDetails = getUserDetails();
+        User user = getUserFromUserDetails(userDetails);
 
-        User user = (User) session.getAttribute("user");
         String avatarUrl = cloudinaryService.securify(cloudinaryService.uploadImage(avatar));
         user.setAvatar(avatarUrl);
         userService.editAvatar(user);
 
-        return "editAccountAvatar";
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(user);
     }
 
-    @RequestMapping(value = "/user/{id}/edit/username", method = RequestMethod.POST)
-    public String changeUsernamePOST(@ModelAttribute("username") String username, HttpSession session, Model model) {
-        User user = (User) session.getAttribute("user");
+    @RequestMapping(value = "/user/{id}/edit/username", method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = "application/json")
+    @PreAuthorize("hasRole('USER')")
+    public @ResponseBody ResponseEntity changeUsernamePOST(@RequestPart String username) {
+        UserDetails userDetails = getUserDetails();
+        User user = getUserFromUserDetails(userDetails);
 
-        if (username.isBlank()) return "editAccountUsername";
-
-        user.setUserName(username);
+        user.setUsername(username);
         try {
             userService.editUserName(user);
         } catch (DuplicateKeyException e) {
-            model.addAttribute("error", "Username taken");
-            return "editAccountUsername";
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(e.getMessage());
         }
+        user.setUsername(username);
 
-        model.addAttribute("updated", true);
-        user.setUserName(username);
-
-        return "editAccountUsername";
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(user);
     }
 
-    @RequestMapping(value = "/user/{id}/edit/password", method = RequestMethod.POST)
-    public String changePasswordPOST(String password, HttpSession session, Model model) {
-        User user = (User) session.getAttribute("user");
-
-        if (password.isBlank()) return "editAccountPassword";
-
-        model.addAttribute("updated", true);
+    @RequestMapping(value = "/user/{id}/edit/password", method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = "application/json")
+    @PreAuthorize("hasRole('USER')")
+    public @ResponseBody ResponseEntity changePasswordPOST(@RequestPart String password) {
+        UserDetails userDetails = getUserDetails();
+        User user = getUserFromUserDetails(userDetails);
         user.setPassword(password);
         userService.editPassword(user);
 
-        return "editAccountPassword";
+        return new ResponseEntity(HttpStatus.OK);
     }
 
-    @RequestMapping(value = "/user/{id}/edit/email", method = RequestMethod.POST)
-    public String changeEmailPOST(String email, HttpSession session, Model model) {
-        User user = (User) session.getAttribute("user");
-        if (email.isBlank()) return "editAccountEmail";
-
+    @RequestMapping(value = "/user/{id}/edit/email", method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = "application/json")
+    @PreAuthorize("hasRole('USER')")
+    public @ResponseBody ResponseEntity changeEmailPOST(@RequestPart String email) {
+        UserDetails userDetails = getUserDetails();
+        User user = getUserFromUserDetails(userDetails);
         user.setEmail(email);
+
         try {
             userService.editEmail(user);
         } catch (DuplicateKeyException e) {
-            model.addAttribute("error", "Email in use");
-            return "editAccountEmail";
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(e.getMessage());
         }
 
-        model.addAttribute("updated", true);
-        return "editAccountEmail";
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(user);
     }
 
-    @RequestMapping(value = "/api/u/{username}")
-    public ResponseEntity<Map<String, Object>> userPageGET(@PathVariable("username") String username) {
-        Optional<User> theUser = userService.getUserByUserName(username);
+    @RequestMapping(value = "/u/{username}", method = RequestMethod.GET)
+    public ResponseEntity<User> userPageGET(@PathVariable("username") String username) {
+        Optional<User> user = userService.getUserByUsername(username);
 
-        if (!theUser.isPresent()) return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-
-        User user = userService.getUserObjectByUserName(username);
-        List<Post> posts = postService.getPostsByUser(user);
-        List<Sub> subs = user.getSubs();
-        List<Reply> replies = replyService.getRepliesByUser(user);
-
-        Map<String, Object> map = new HashMap<>();
-
-        map.put("user", user);
-        map.put("posts", posts);
-        map.put("subs", subs);
-        map.put("replies", replies);
-
-        return new ResponseEntity<>(map, HttpStatus.OK);
+        return new ResponseEntity<User>(user.get(), HttpStatus.OK);
     }
+
+    public UserDetails getUserDetails() {
+        Object userDetails = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (userDetails instanceof UserDetails) {
+            return (UserDetails) userDetails;
+        }
+        return userService.getAnonDetails();
+    }
+
+    public User getUserFromUserDetails(UserDetails userDetails) {
+        return userDetails.getUsername() == "Anon" ?
+                userService.getAnon() : userService.getUserByUsername(userDetails.getUsername()).get();
+    }
+
+
 }

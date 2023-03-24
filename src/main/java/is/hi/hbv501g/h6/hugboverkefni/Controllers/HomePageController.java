@@ -11,6 +11,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpSession;
@@ -19,17 +20,13 @@ import java.util.List;
 @Controller
 public class HomePageController {
     private final PostServiceImplementation postService;
-    private final UserServiceImplementation userService;
-    private final ReplyServiceImplementation replyService;
 
     @Autowired
-    public HomePageController(PostServiceImplementation postService, UserServiceImplementation userService, ReplyServiceImplementation replyService) {
+    public HomePageController(PostServiceImplementation postService) {
         this.postService = postService;
-        this.userService = userService;
-        this.replyService = replyService;
     }
 
-    @RequestMapping("/")
+    @RequestMapping(value = "/", method = RequestMethod.GET)
     public String frontPage(Model model) {
         List<Post> allPosts = postService.getPostsOrderedByCreated();
 

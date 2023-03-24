@@ -1,15 +1,21 @@
 package is.hi.hbv501g.h6.hugboverkefni.Controllers.RestAPI;
 
 import is.hi.hbv501g.h6.hugboverkefni.Controllers.BaseController;
-import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.Post;
-import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.Reply;
-import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.Sub;
+import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.*;
+import is.hi.hbv501g.h6.hugboverkefni.Persistence.Payload.Response.ContentWithUserDetailsResponse;
+import is.hi.hbv501g.h6.hugboverkefni.Persistence.UserDetailsImplementation;
 import is.hi.hbv501g.h6.hugboverkefni.Services.CloudinaryService;
 import is.hi.hbv501g.h6.hugboverkefni.Services.Implementations.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,15 +25,17 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/v1")
 public class RestPostController extends BaseController {
-
+    AuthenticationManager authenticationManager;
     @Autowired
     public RestPostController(PostServiceImplementation postService,
                               UserServiceImplementation userService,
                               ReplyServiceImplementation replyService,
                               VoteServiceImplementation voteService,
                               SubServiceImplementation subService,
-                              CloudinaryService cloudinaryService) {
+                              CloudinaryService cloudinaryService,
+                              AuthenticationManager authenticationManager) {
         super(postService, userService, replyService, voteService, subService, cloudinaryService);
+        this.authenticationManager = authenticationManager;
     }
 
     @ResponseStatus(HttpStatus.OK)
@@ -38,60 +46,68 @@ public class RestPostController extends BaseController {
 
 
     @RequestMapping(value = "/p/{slug}/newPost", method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = "application/json")
-    public @ResponseBody ResponseEntity<Post> createNewPost(@PathVariable String slug,
-                                              @RequestPart String title,
-                                              @RequestPart String text,
-                                              @RequestPart MultipartFile image,
-                                              @RequestPart MultipartFile audio,
-                                              HttpSession session) {
-        String recording = "";
+    public @ResponseBody ResponseEntity createNewPost(@PathVariable String slug,
+                                                      @RequestPart String title,
+                                                      @RequestPart(name = "text", required = false) String text,
+                                                      @RequestPart(name = "image", required = false) MultipartFile image,
+                                                      @RequestPart(name = "audio", required = false) MultipartFile audio,
+                                                      @RequestPart(name = "recording", required = false) String recording) {
+        if(text == null) text = "";
+        UserDetails userDetails = getUserDetails();
+        User user = getUserFromUserDetails(userDetails);
         Sub sub = subService.getSubBySlug(slug);
-        Post post = createPost(title, sub, text, image, audio, recording, session);
+        if(sub == null) return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body("Sub not found");
 
         try {
+            Post post = createPost(title, sub, text, image, audio, recording, user);
             postService.addNewPost(post);
             return ResponseEntity
                     .status(HttpStatus.CREATED)
-                    .body(post);
-        } catch (IllegalStateException e) {
+                    .body(new ContentWithUserDetailsResponse(post.getContent(), userDetails));
+        } catch (RuntimeException e) {
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
-                    .body(post);
+                    .body(e.getMessage());
         }
     }
 
-    @RequestMapping(value = "/r/{slug}/{id}", method = RequestMethod.POST)
-    public ResponseEntity replyPost(@PathVariable String slug,
-                                    @PathVariable long id,
-                                    Map<String, Object> map,
-                                    HttpSession session) {
+    @RequestMapping(value = "/p/{slug}/{id:\\d+}", method = RequestMethod.POST)
+    public @ResponseBody ResponseEntity replyPost(@PathVariable String slug,
+                                                  @PathVariable long id,
+                                                  @RequestPart(name = "text", required = false) String text,
+                                                  @RequestPart(name = "image", required = false) MultipartFile image,
+                                                  @RequestPart(name = "audio", required = false) MultipartFile audio,
+                                                  @RequestPart(name = "recording", required = false) String recording) {
+        if(text == null) text = "";
         Optional<Post> post = postService.getPostById(id);
-        if(!post.isPresent()) return new ResponseEntity(HttpStatus.NOT_FOUND);
-
         Sub sub = subService.getSubBySlug(slug);
-        String text = "", recording = "";
-        MultipartFile image = null, audio = null;
+        if(!post.isPresent()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Post not found");
+        if(sub == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Slug not found");
 
-        if(map.containsKey("text")) text = map.get("text").toString();
-        if(map.containsKey("image")) image = (MultipartFile) map.get("image");
-        if(map.containsKey("audio")) audio = (MultipartFile) map.get("audio");
-        if(map.containsKey("recording")) recording = map.get("recording").toString();
 
-        if(text.isEmpty() && image == null && audio == null && recording.isEmpty()) {
-            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        if(text.isEmpty() && image == null && audio == null && recording == null) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body("Reply cannot be empty");
         }
-        Reply reply = createReply(text, sub, image, audio, recording, session);
+
+        UserDetails userDetails = getUserDetails();
+        User user = getUserFromUserDetails(userDetails);
+
         try {
+            Reply reply = createReply(text, sub, image, audio, recording, user);
             replyService.addNewReply(reply);
             post.get().addReply(reply);
             postService.addNewPost(post.get());
             return ResponseEntity
                     .status(HttpStatus.CREATED)
-                    .body(reply);
-        } catch (IllegalStateException e) {
+                    .body(new ContentWithUserDetailsResponse(reply.getContent(), userDetails));
+        } catch (RuntimeException e) {
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
-                    .body(e);
+                    .body(e.getMessage());
         }
     }
 
@@ -101,47 +117,56 @@ public class RestPostController extends BaseController {
         return postService.getPostById(id).get();
     }
 
-
-
-
-
     @PostMapping("/p/{slug}/{postId}/{id}")
-    public ResponseEntity replyReply(@PathVariable String slug,
-                                     @PathVariable long postId,
-                                     @PathVariable long id,
-                                     Map<String, Object> map,
-                                     HttpSession session) {
+    public @ResponseBody ResponseEntity replyReply(@PathVariable String slug,
+                                                   @PathVariable long postId,
+                                                   @PathVariable long id,
+                                                   @RequestPart(name = "text", required = false) String text,
+                                                   @RequestPart(name = "image", required = false) MultipartFile image,
+                                                   @RequestPart(name = "audio", required = false) MultipartFile audio,
+                                                   @RequestPart(name = "recording", required = false) String recording) {
+        if(text == null) text = "";
         Optional<Reply> prevReply = replyService.getReplyById(id);
-        if(!prevReply.isPresent()) return new ResponseEntity(HttpStatus.NOT_FOUND);
-
         Sub sub = subService.getSubBySlug(slug);
-        String text = "", recording = "";
-        MultipartFile image = null, audio = null;
+        if(!prevReply.isPresent()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Post not found");
+        if(sub == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Slug not found");
 
-        if(map.containsKey("text")) text = map.get("text").toString();
-        if(map.containsKey("image")) image = (MultipartFile) map.get("image");
-        if(map.containsKey("audio")) audio = (MultipartFile) map.get("audio");
-        if(map.containsKey("recording")) recording = map.get("recording").toString();
+        if(text.isEmpty() && image == null && audio == null && recording == null)
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body("Reply cannot be empty");
 
-        if(text.isEmpty() && image == null && audio == null && recording.isEmpty())
-            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        UserDetails userDetails = getUserDetails();
+        User user = getUserFromUserDetails(userDetails);
 
-        Reply reply = createReply(text, sub, image, audio, recording, session);
         try {
+            Reply reply = createReply(text, sub, image, audio, recording, user);
             replyService.addNewReply(reply);
             prevReply.get().addReply(reply);
             replyService.addNewReply(prevReply.get());
             return ResponseEntity
                     .status(HttpStatus.CREATED)
-                    .body(reply);
-        } catch (IllegalStateException e) {
+                    .body(new ContentWithUserDetailsResponse(reply.getContent(), userDetails));
+        } catch (RuntimeException e) {
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
-                    .body(e);
+                    .body(e.getMessage());
         }
     }
 
 
+    public UserDetails getUserDetails() {
+        Object userDetails = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (userDetails instanceof UserDetails) {
+            return (UserDetails) userDetails;
+        }
+        return userService.getAnonDetails();
+    }
+
+    public User getUserFromUserDetails(UserDetails userDetails) {
+        return userDetails.getUsername() == "Anon" ?
+                userService.getAnon() : userService.getUserByUsername(userDetails.getUsername()).get();
+    }
 
 
 }

@@ -6,8 +6,8 @@
                     <img alt="user image" class="rounded-full border border-gray-100 shadow-sm"
                          th:src="${postReply.creator.getAvatar()}"/>
                 </div>
-                <a class="font-audiowide text-sky-400 text-opacity-80 ml-4" th:href="@{'/u/' + ${postReply.creator.userName}}"><p
-                        th:text=" ${postReply.creator.userName}"></p></a>
+                <a class="font-audiowide text-sky-400 text-opacity-80 ml-4" th:href="@{'/u/' + ${postReply.creator.username}}"><p
+                        th:text=" ${postReply.creator.username}"></p></a>
             </div>
             <form action="#" class="upvote_reply" method="post"
                   th:action="@{/r/} + ${postReply.replyId} + @{/upvote}" th:if="${session?.user}">

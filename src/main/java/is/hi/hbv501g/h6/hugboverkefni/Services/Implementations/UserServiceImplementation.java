@@ -3,9 +3,11 @@ package is.hi.hbv501g.h6.hugboverkefni.Services.Implementations;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.Sub;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.User;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Repositories.UserRepository;
+import is.hi.hbv501g.h6.hugboverkefni.Persistence.UserDetailsImplementation;
 import is.hi.hbv501g.h6.hugboverkefni.Services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.BindingResult;
@@ -17,14 +19,16 @@ import java.util.Optional;
 @Service
 public class UserServiceImplementation implements UserService {
     private final UserRepository userRepository;
+    private UserDetailsServiceImplementation userDetailsService;
     @Autowired
     private Validator validator;
     private BCryptPasswordEncoder encoder;
 
     @Autowired
-    public UserServiceImplementation(UserRepository userRepository) {
+    public UserServiceImplementation(UserRepository userRepository, UserDetailsServiceImplementation userDetailsService) {
         this.userRepository = userRepository;
-        encoder = new BCryptPasswordEncoder(16);
+        this.userDetailsService = userDetailsService;
+        encoder = new BCryptPasswordEncoder();
     }
 
     /**
@@ -48,6 +52,18 @@ public class UserServiceImplementation implements UserService {
         return anon.get();
     }
 
+    public boolean existsByEmail(String email) {
+        return userRepository.existsByEmail(email);
+    }
+
+    public boolean existsByUsername(String username) {
+        return userRepository.existsByUsername(username);
+    }
+
+    public UserDetails getAnonDetails() {
+        return userDetailsService.loadUserByUsername(getAnon().getUsername());
+    }
+
     /**
      * Returns User object containing email if it exists
      *
@@ -66,12 +82,12 @@ public class UserServiceImplementation implements UserService {
      * @return Optional<User>
      */
     @Override
-    public Optional<User> getUserByUserName(String userName) {
-        return userRepository.findByUserName(userName);
+    public Optional<User> getUserByUsername(String username) {
+        return userRepository.findByUsername(username);
     }
     @Override
-    public User getUserObjectByUserName(String userName){
-        return userRepository.findUserByUserName(userName);
+    public User getUserObjectByUserName(String username){
+        return userRepository.findUserByUsername(username).get();
     }
     /**
      * Adds new User to the database if userName or email is not
@@ -83,21 +99,21 @@ public class UserServiceImplementation implements UserService {
      * @param result BindingResult object
      */
     public void addNewUser(User user, BindingResult result) {
-        Optional<User> userName = userRepository.findByUserName(user.getUserName());
+        Optional<User> username = userRepository.findByUsername(user.getUsername());
         Optional<User> email = userRepository.findByEmail(user.getEmail());
 
         user.setPassword(encoder.encode(user.getPassword()));
 
-        if (userName.isPresent()) result.rejectValue("userName", "error.duplicate", "Username taken");
+        if (username.isPresent()) result.rejectValue("username", "error.duplicate", "Username taken");
         if (email.isPresent()) result.rejectValue("email", "error.duplicate", "Email in use");
 
         if (!result.hasErrors()) userRepository.save(user);
     }
 
     public void addDefaultUser(User user) {
-        Optional<User> userName = userRepository.findByUserName(user.getUserName());
+        Optional<User> userName = userRepository.findByUsername(user.getUsername());
         Optional<User> email = userRepository.findByEmail(user.getEmail());
-        System.out.println("username: " + user.getUserName());
+        System.out.println("username: " + user.getUsername());
         System.out.println("user password: " + user.getPassword());
         user.setPassword(encoder.encode(user.getPassword()));
 
@@ -119,7 +135,7 @@ public class UserServiceImplementation implements UserService {
 
     @Override
     public void editUserName(User user) {
-        Optional<User> usernameExists = userRepository.findByUserName(user.getUserName());
+        Optional<User> usernameExists = userRepository.findByUsername(user.getUsername());
         if (usernameExists.isPresent()) throw new DuplicateKeyException("Username taken");
         userRepository.save(user);
     }
@@ -158,7 +174,7 @@ public class UserServiceImplementation implements UserService {
      */
     @Override
     public User loginUser(User user) {
-        Optional<User> exists = getUserByUserName(user.getUserName());
+        Optional<User> exists = getUserByUsername(user.getUsername());
 
         if (exists.isPresent()) {
             if (encoder.matches(user.getPassword(), exists.get().getPassword()))

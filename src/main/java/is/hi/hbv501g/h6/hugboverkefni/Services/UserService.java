@@ -1,6 +1,8 @@
 package is.hi.hbv501g.h6.hugboverkefni.Services;
 
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.BindingResult;
 
@@ -13,9 +15,15 @@ public interface UserService {
 
     User getAnon();
 
+    UserDetails getAnonDetails();
+
+    boolean existsByEmail(String email);
+
+    boolean existsByUsername(String username);
+
     Optional<User> getUserByEmail(String email);
 
-    Optional<User> getUserByUserName(String userName);
+    Optional<User> getUserByUsername(String userName);
     User getUserObjectByUserName(String userName);
     void addNewUser(User user, BindingResult result);
 

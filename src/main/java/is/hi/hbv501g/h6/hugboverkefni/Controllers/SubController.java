@@ -62,7 +62,7 @@ public class SubController {
         User user = (User) session.getAttribute("user");
 
         // Cursed session fix
-        User dbUser = userService.getUserObjectByUserName(user.getUserName());
+        User dbUser = userService.getUserObjectByUserName(user.getUsername());
         boolean following = dbUser.isFollowing(sub);
         model.addAttribute("following", following);
 
@@ -92,7 +92,7 @@ public class SubController {
 
     @RequestMapping(value = "/p/{slug}/toggleFollow", method = RequestMethod.POST)
     public String toggleFollow(@PathVariable("slug") String slug, HttpSession session, Model model) {
-        Optional<User> user = userService.getUserByUserName(((User) session.getAttribute("user")).getUserName());
+        Optional<User> user = userService.getUserByUsername(((User) session.getAttribute("user")).getUsername());
         Sub sub = subService.getSubBySlug(slug);
         if (!user.get().isFollowing(sub)) { userService.addSub(user.get(), sub); }
         else { userService.removeSub(user.get(), sub); }

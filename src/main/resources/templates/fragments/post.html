@@ -5,8 +5,8 @@
                 <img alt="user image" class="rounded-full border border-gray-100 shadow-sm"
                      th:src="${post.creator.getAvatar()}"/>
             </div>
-            <a class="font-audiowide text-sky-400 text-opacity-80" th:href="@{'/u/' + ${post.creator.userName}}"><p
-                    th:text=" ${post.creator.userName}"></p></a>
+            <a class="font-audiowide text-sky-400 text-opacity-80" th:href="@{'/u/' + ${post.creator.username}}"><p
+                    th:text=" ${post.creator.username}"></p></a>
         </div>
         <div class="post_votes flex flex-auto flex-row">
             <div class="vote_buttons flex flex-auto flex-row upvote_div" th:id="@{'upvote_div/' + ${post.postId}}">
