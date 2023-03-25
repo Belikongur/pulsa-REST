@@ -1,6 +1,5 @@
 package is.hi.hbv501g.h6.hugboverkefni.Controllers.RestAPI;
 
-import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.ERole;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.Post;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.Sub;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.User;
@@ -14,19 +13,11 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import javax.annotation.security.RolesAllowed;
-import javax.servlet.http.HttpSession;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -106,7 +97,7 @@ public class RestSubController {
 
 
     @RequestMapping(value = "/p/{slug}/toggleFollow", method = RequestMethod.POST)
-    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity toggleFollow(@PathVariable("slug") String slug) {
         UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 

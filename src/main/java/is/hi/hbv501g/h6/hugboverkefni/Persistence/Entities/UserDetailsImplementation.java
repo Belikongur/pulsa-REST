@@ -1,7 +1,6 @@
-package is.hi.hbv501g.h6.hugboverkefni.Persistence;
+package is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

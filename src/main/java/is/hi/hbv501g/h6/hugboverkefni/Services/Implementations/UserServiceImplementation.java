@@ -3,11 +3,10 @@ package is.hi.hbv501g.h6.hugboverkefni.Services.Implementations;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.Sub;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.User;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Repositories.UserRepository;
-import is.hi.hbv501g.h6.hugboverkefni.Persistence.UserDetailsImplementation;
+import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.UserDetailsImplementation;
 import is.hi.hbv501g.h6.hugboverkefni.Services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.BindingResult;
@@ -60,7 +59,7 @@ public class UserServiceImplementation implements UserService {
         return userRepository.existsByUsername(username);
     }
 
-    public UserDetails getAnonDetails() {
+    public UserDetailsImplementation getAnonDetails() {
         return userDetailsService.loadUserByUsername(getAnon().getUsername());
     }
 

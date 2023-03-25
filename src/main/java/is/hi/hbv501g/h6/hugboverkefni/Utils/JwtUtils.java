@@ -1,8 +1,7 @@
 package is.hi.hbv501g.h6.hugboverkefni.Utils;
 
 import io.jsonwebtoken.*;
-import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.User;
-import is.hi.hbv501g.h6.hugboverkefni.Persistence.UserDetailsImplementation;
+import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.UserDetailsImplementation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;

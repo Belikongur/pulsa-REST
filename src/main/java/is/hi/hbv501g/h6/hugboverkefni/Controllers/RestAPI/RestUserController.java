@@ -1,15 +1,13 @@
 package is.hi.hbv501g.h6.hugboverkefni.Controllers.RestAPI;
 
-import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.*;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Repositories.RoleRepository;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Repositories.UserRepository;
-import is.hi.hbv501g.h6.hugboverkefni.Persistence.UserDetailsImplementation;
+import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.UserDetailsImplementation;
 import is.hi.hbv501g.h6.hugboverkefni.Services.CloudinaryService;
 import is.hi.hbv501g.h6.hugboverkefni.Services.Implementations.PostServiceImplementation;
 import is.hi.hbv501g.h6.hugboverkefni.Services.Implementations.ReplyServiceImplementation;
 import is.hi.hbv501g.h6.hugboverkefni.Services.Implementations.SubServiceImplementation;
 import is.hi.hbv501g.h6.hugboverkefni.Services.Implementations.UserServiceImplementation;
-import is.hi.hbv501g.h6.hugboverkefni.Services.UserService;
 import is.hi.hbv501g.h6.hugboverkefni.Utils.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
@@ -24,18 +22,13 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.ERole;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.Role;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.User;
-import javax.servlet.http.HttpSession;
+
 import javax.validation.Valid;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -78,7 +71,7 @@ public class RestUserController {
     }
 
     @RequestMapping(value = "/register", method = RequestMethod.POST)
-    public @ResponseBody ResponseEntity registerPOST(@Valid User user, BindingResult result) {
+    public @ResponseBody ResponseEntity registerPOST(@Valid User user) {
         if(userService.existsByUsername(user.getUsername())) {
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
@@ -145,8 +138,8 @@ public class RestUserController {
     }
 */
     @RequestMapping(value = "/user/{id}/edit", method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = "application/json")
-    @PreAuthorize("hasRole('USER')")
-    public @ResponseBody ResponseEntity editAccountPOST(@RequestPart(value = "realName", required = false) String realName) {
+    @PreAuthorize("hasRole('USER') and #id == principal.getId()")
+    public @ResponseBody ResponseEntity editAccountPOST(@PathVariable("id") long id, @RequestPart(value = "realName", required = false) String realName) {
         if(realName == null) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("real name cannot be empty");
 
         UserDetails userDetails = getUserDetails();
@@ -160,8 +153,8 @@ public class RestUserController {
     }
 
     @RequestMapping(value = "/user/{id}/edit/avatar", method = RequestMethod.POST)
-    @PreAuthorize("hasRole('USER')")
-    public @ResponseBody ResponseEntity changeAvatarPOST(@RequestPart MultipartFile avatar) {
+    @PreAuthorize("hasRole('USER') and #id == principal.getId()")
+    public @ResponseBody ResponseEntity changeAvatarPOST(@PathVariable("id") long id, @RequestPart MultipartFile avatar) {
         UserDetails userDetails = getUserDetails();
         User user = getUserFromUserDetails(userDetails);
 
@@ -175,12 +168,11 @@ public class RestUserController {
     }
 
     @RequestMapping(value = "/user/{id}/edit/username", method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = "application/json")
-    @PreAuthorize("hasRole('USER')")
-    public @ResponseBody ResponseEntity changeUsernamePOST(@RequestPart String username) {
-        UserDetails userDetails = getUserDetails();
+    @PreAuthorize("hasRole('USER') and #id == principal.getId()")
+    public @ResponseBody ResponseEntity changeUsernamePOST(@PathVariable("id") long id, @RequestPart String username) {
+        UserDetailsImplementation userDetails = getUserDetails();
         User user = getUserFromUserDetails(userDetails);
 
-        user.setUsername(username);
         try {
             userService.editUserName(user);
         } catch (DuplicateKeyException e) {
@@ -196,8 +188,8 @@ public class RestUserController {
     }
 
     @RequestMapping(value = "/user/{id}/edit/password", method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = "application/json")
-    @PreAuthorize("hasRole('USER')")
-    public @ResponseBody ResponseEntity changePasswordPOST(@RequestPart String password) {
+    @PreAuthorize("hasRole('USER') and #id == principal.getId()")
+    public @ResponseBody ResponseEntity changePasswordPOST(@PathVariable("id") long id, @RequestPart String password) {
         UserDetails userDetails = getUserDetails();
         User user = getUserFromUserDetails(userDetails);
         user.setPassword(password);
@@ -207,8 +199,8 @@ public class RestUserController {
     }
 
     @RequestMapping(value = "/user/{id}/edit/email", method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = "application/json")
-    @PreAuthorize("hasRole('USER')")
-    public @ResponseBody ResponseEntity changeEmailPOST(@RequestPart String email) {
+    @PreAuthorize("hasRole('USER') and #id == principal.getId()")
+    public @ResponseBody ResponseEntity changeEmailPOST(@PathVariable("id") long id, @RequestPart String email) {
         UserDetails userDetails = getUserDetails();
         User user = getUserFromUserDetails(userDetails);
         user.setEmail(email);
@@ -233,17 +225,12 @@ public class RestUserController {
         return new ResponseEntity<User>(user.get(), HttpStatus.OK);
     }
 
-    public UserDetails getUserDetails() {
-        Object userDetails = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (userDetails instanceof UserDetails) {
-            return (UserDetails) userDetails;
-        }
-        return userService.getAnonDetails();
+    public UserDetailsImplementation getUserDetails() {
+        return (UserDetailsImplementation) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }
 
     public User getUserFromUserDetails(UserDetails userDetails) {
-        return userDetails.getUsername() == "Anon" ?
-                userService.getAnon() : userService.getUserByUsername(userDetails.getUsername()).get();
+        return userService.getUserByUsername(userDetails.getUsername()).get();
     }
 
 

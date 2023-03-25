@@ -3,7 +3,6 @@ package is.hi.hbv501g.h6.hugboverkefni.Controllers.RestAPI;
 import is.hi.hbv501g.h6.hugboverkefni.Controllers.BaseController;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.*;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Payload.Response.ContentWithUserDetailsResponse;
-import is.hi.hbv501g.h6.hugboverkefni.Persistence.UserDetailsImplementation;
 import is.hi.hbv501g.h6.hugboverkefni.Services.CloudinaryService;
 import is.hi.hbv501g.h6.hugboverkefni.Services.Implementations.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,14 +11,11 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpSession;
 import java.util.*;
 
 @RestController
@@ -52,13 +48,19 @@ public class RestPostController extends BaseController {
                                                       @RequestPart(name = "image", required = false) MultipartFile image,
                                                       @RequestPart(name = "audio", required = false) MultipartFile audio,
                                                       @RequestPart(name = "recording", required = false) String recording) {
+        UserDetailsImplementation userDetails;
+        User user;
+        if(isAnonRequest()) {
+            userDetails = userService.getAnonDetails();
+            user = userService.getAnon();
+        } else {
+            userDetails = getUserDetails();
+            user = userService.getUserByUsername(userDetails.getUsername()).get();
+        }
+
         if(text == null) text = "";
-        UserDetails userDetails = getUserDetails();
-        User user = getUserFromUserDetails(userDetails);
         Sub sub = subService.getSubBySlug(slug);
-        if(sub == null) return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body("Sub not found");
+        if(sub == null) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Sub not found with slug: " + slug);
 
         try {
             Post post = createPost(title, sub, text, image, audio, recording, user);
@@ -80,11 +82,21 @@ public class RestPostController extends BaseController {
                                                   @RequestPart(name = "image", required = false) MultipartFile image,
                                                   @RequestPart(name = "audio", required = false) MultipartFile audio,
                                                   @RequestPart(name = "recording", required = false) String recording) {
+        UserDetailsImplementation userDetails;
+        User user;
+        if(isAnonRequest()) {
+            userDetails = userService.getAnonDetails();
+            user = userService.getAnon();
+        } else {
+            userDetails = getUserDetails();
+            user = userService.getUserByUsername(userDetails.getUsername()).get();
+        }
+
         if(text == null) text = "";
         Optional<Post> post = postService.getPostById(id);
         Sub sub = subService.getSubBySlug(slug);
         if(!post.isPresent()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Post not found");
-        if(sub == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Slug not found");
+        if(sub == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Slug not found with slug: " + slug);
 
 
         if(text.isEmpty() && image == null && audio == null && recording == null) {
@@ -92,9 +104,6 @@ public class RestPostController extends BaseController {
                     .status(HttpStatus.BAD_REQUEST)
                     .body("Reply cannot be empty");
         }
-
-        UserDetails userDetails = getUserDetails();
-        User user = getUserFromUserDetails(userDetails);
 
         try {
             Reply reply = createReply(text, sub, image, audio, recording, user);
@@ -125,19 +134,26 @@ public class RestPostController extends BaseController {
                                                    @RequestPart(name = "image", required = false) MultipartFile image,
                                                    @RequestPart(name = "audio", required = false) MultipartFile audio,
                                                    @RequestPart(name = "recording", required = false) String recording) {
+        UserDetailsImplementation userDetails;
+        User user;
+        if(isAnonRequest()) {
+            userDetails = userService.getAnonDetails();
+            user = userService.getAnon();
+        } else {
+            userDetails = getUserDetails();
+            user = userService.getUserByUsername(userDetails.getUsername()).get();
+        }
+
         if(text == null) text = "";
         Optional<Reply> prevReply = replyService.getReplyById(id);
         Sub sub = subService.getSubBySlug(slug);
         if(!prevReply.isPresent()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Post not found");
-        if(sub == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Slug not found");
+        if(sub == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Slug: " + slug + " not found");
 
         if(text.isEmpty() && image == null && audio == null && recording == null)
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
                     .body("Reply cannot be empty");
-
-        UserDetails userDetails = getUserDetails();
-        User user = getUserFromUserDetails(userDetails);
 
         try {
             Reply reply = createReply(text, sub, image, audio, recording, user);
@@ -154,18 +170,16 @@ public class RestPostController extends BaseController {
         }
     }
 
+    public boolean isAnonRequest() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        boolean requestAnon = authentication instanceof AnonymousAuthenticationToken;
+        boolean hasRoleAnon = authentication.getAuthorities().stream().anyMatch(r -> r.getAuthority().equals("ROLE_ANON"));
 
-    public UserDetails getUserDetails() {
-        Object userDetails = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (userDetails instanceof UserDetails) {
-            return (UserDetails) userDetails;
-        }
-        return userService.getAnonDetails();
+        return requestAnon || hasRoleAnon;
     }
 
-    public User getUserFromUserDetails(UserDetails userDetails) {
-        return userDetails.getUsername() == "Anon" ?
-                userService.getAnon() : userService.getUserByUsername(userDetails.getUsername()).get();
+    public UserDetailsImplementation getUserDetails() {
+        return (UserDetailsImplementation) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }
 
 
