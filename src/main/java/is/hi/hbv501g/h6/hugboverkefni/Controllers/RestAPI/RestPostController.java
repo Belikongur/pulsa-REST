@@ -37,6 +37,12 @@ public class RestPostController extends BaseController {
     @ResponseStatus(HttpStatus.OK)
     @GetMapping
     public List<Post> findAllPosts() {
+        List<Post> posts = postService.getPostsOrderedByCreated();
+        posts.forEach((post) -> {
+            System.out.println("title" + post.getTitle());
+            System.out.println("post id: " + post.getPostId());
+            System.out.println("sub slug: " + post.getSub().getSlug());
+        });
         return postService.getPostsOrderedByCreated();
     }
 
@@ -65,9 +71,12 @@ public class RestPostController extends BaseController {
         try {
             Post post = createPost(title, sub, text, image, audio, recording, user);
             postService.addNewPost(post);
+            System.out.println("POST ID: " + post.getPostId());
+            System.out.println("title: " + post.getTitle());
+            System.out.println("slug: " + post.getSub().getSlug());
             return ResponseEntity
                     .status(HttpStatus.CREATED)
-                    .body(new ContentWithUserDetailsResponse(post.getContent(), userDetails));
+                    .body(post);
         } catch (RuntimeException e) {
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
@@ -112,7 +121,7 @@ public class RestPostController extends BaseController {
             postService.addNewPost(post.get());
             return ResponseEntity
                     .status(HttpStatus.CREATED)
-                    .body(new ContentWithUserDetailsResponse(reply.getContent(), userDetails));
+                    .body(reply);
         } catch (RuntimeException e) {
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
@@ -162,7 +171,7 @@ public class RestPostController extends BaseController {
             replyService.addNewReply(prevReply.get());
             return ResponseEntity
                     .status(HttpStatus.CREATED)
-                    .body(new ContentWithUserDetailsResponse(reply.getContent(), userDetails));
+                    .body(reply);
         } catch (RuntimeException e) {
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
