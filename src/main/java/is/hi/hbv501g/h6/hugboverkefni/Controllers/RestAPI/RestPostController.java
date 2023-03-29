@@ -19,7 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.*;
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api/v1/")
 public class RestPostController extends BaseController {
     AuthenticationManager authenticationManager;
     @Autowired
@@ -47,7 +47,7 @@ public class RestPostController extends BaseController {
     }
 
 
-    @RequestMapping(value = "/p/{slug}/newPost", method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = "application/json")
+    @RequestMapping(value = "p/{slug}/newPost", method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = "application/json")
     public @ResponseBody ResponseEntity createNewPost(@PathVariable String slug,
                                                       @RequestPart String title,
                                                       @RequestPart(name = "text", required = false) String text,
@@ -84,7 +84,7 @@ public class RestPostController extends BaseController {
         }
     }
 
-    @RequestMapping(value = "/p/{slug}/{id:\\d+}", method = RequestMethod.POST)
+    @RequestMapping(value = "p/{slug}/{id:\\d+}", method = RequestMethod.POST)
     public @ResponseBody ResponseEntity replyPost(@PathVariable String slug,
                                                   @PathVariable long id,
                                                   @RequestPart(name = "text", required = false) String text,
@@ -130,12 +130,12 @@ public class RestPostController extends BaseController {
     }
 
     @ResponseStatus(HttpStatus.OK)
-    @GetMapping(value = "/p/{slug}/{id}")
+    @GetMapping(value = "p/{slug}/{id}")
     public Post getPost(@PathVariable String slug, @PathVariable long id) {
         return postService.getPostById(id).get();
     }
 
-    @PostMapping("/p/{slug}/{postId}/{id}")
+    @PostMapping("p/{slug}/{postId}/{id}")
     public @ResponseBody ResponseEntity replyReply(@PathVariable String slug,
                                                    @PathVariable long postId,
                                                    @PathVariable long id,

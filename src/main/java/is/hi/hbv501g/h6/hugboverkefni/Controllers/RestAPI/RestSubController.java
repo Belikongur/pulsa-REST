@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api/v1/")
 public class RestSubController {
     AuthenticationManager authenticationManager;
     private final PostServiceImplementation postService;
@@ -43,19 +43,19 @@ public class RestSubController {
     }
 
     @ResponseStatus(HttpStatus.OK)
-    @RequestMapping(value = "/p", method = RequestMethod.GET)
+    @RequestMapping(value = "p", method = RequestMethod.GET)
     public List<Sub> subIndex() {
         return subService.getSubs();
     }
 
     @ResponseStatus(HttpStatus.OK)
-    @RequestMapping(value = "/p/{slug}", method = RequestMethod.GET)
+    @RequestMapping(value = "p/{slug}", method = RequestMethod.GET)
     public List<Post> subPage(@PathVariable("slug") String slug) {
         Sub sub = subService.getSubBySlug(slug);
         return postService.getSubPostsOrderedByCreated(sub);
     }
 
-    @RequestMapping(value = "/newSub", method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = "application/json")
+    @RequestMapping(value = "newSub", method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = "application/json")
     public @ResponseBody ResponseEntity newSubPOST(@RequestPart String name,
                                                    @RequestPart(value = "image", required = false) MultipartFile image) {
         if(name.isEmpty()) {
@@ -96,7 +96,7 @@ public class RestSubController {
     }
 
 
-    @RequestMapping(value = "/p/{slug}/toggleFollow", method = RequestMethod.POST)
+    @RequestMapping(value = "p/{slug}/toggleFollow", method = RequestMethod.POST)
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity toggleFollow(@PathVariable("slug") String slug) {
         UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();

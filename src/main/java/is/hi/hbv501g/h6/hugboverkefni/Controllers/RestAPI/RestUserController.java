@@ -33,7 +33,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api/v1/")
 public class RestUserController {
 
     AuthenticationManager authenticationManager;
@@ -70,7 +70,7 @@ public class RestUserController {
         this.authenticationManager = authenticationManager;
     }
 
-    @RequestMapping(value = "/register", method = RequestMethod.POST)
+    @RequestMapping(value = "register", method = RequestMethod.POST)
     public @ResponseBody ResponseEntity registerPOST(@Valid User user) {
         if(userService.existsByUsername(user.getUsername())) {
             return ResponseEntity
@@ -109,7 +109,7 @@ public class RestUserController {
 
     }
 
-    @RequestMapping(value = {"/login"}, method = RequestMethod.POST)
+    @RequestMapping(value = {"login"}, method = RequestMethod.POST)
     public @ResponseBody ResponseEntity authenticateUser(@RequestPart String username,
                                                          @RequestPart String password) {
         Authentication auth = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
@@ -120,7 +120,7 @@ public class RestUserController {
         List<String> roles = userDetails.getAuthorities().stream()
                 .map(item -> item.getAuthority())
                 .collect(Collectors.toList());
-
+        User user = getUserFromUserDetails(userDetails);
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .header(
@@ -137,7 +137,7 @@ public class RestUserController {
         return new ResponseEntity(HttpStatus.OK);
     }
 */
-    @RequestMapping(value = "/user/{id}/edit", method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = "application/json")
+    @RequestMapping(value = "user/{id}/edit", method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = "application/json")
     @PreAuthorize("hasRole('USER') and #id == principal.getId()")
     public @ResponseBody ResponseEntity editAccountPOST(@PathVariable("id") long id, @RequestPart(value = "realName", required = false) String realName) {
         if(realName == null) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("real name cannot be empty");
@@ -152,7 +152,7 @@ public class RestUserController {
                 .body(user);
     }
 
-    @RequestMapping(value = "/user/{id}/edit/avatar", method = RequestMethod.POST)
+    @RequestMapping(value = "user/{id}/edit/avatar", method = RequestMethod.POST)
     @PreAuthorize("hasRole('USER') and #id == principal.getId()")
     public @ResponseBody ResponseEntity changeAvatarPOST(@PathVariable("id") long id, @RequestPart MultipartFile avatar) {
         UserDetails userDetails = getUserDetails();
@@ -167,7 +167,7 @@ public class RestUserController {
                 .body(user);
     }
 
-    @RequestMapping(value = "/user/{id}/edit/username", method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = "application/json")
+    @RequestMapping(value = "user/{id}/edit/username", method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = "application/json")
     @PreAuthorize("hasRole('USER') and #id == principal.getId()")
     public @ResponseBody ResponseEntity changeUsernamePOST(@PathVariable("id") long id, @RequestPart String username) {
         UserDetailsImplementation userDetails = getUserDetails();
@@ -187,7 +187,7 @@ public class RestUserController {
                 .body(user);
     }
 
-    @RequestMapping(value = "/user/{id}/edit/password", method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = "application/json")
+    @RequestMapping(value = "user/{id}/edit/password", method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = "application/json")
     @PreAuthorize("hasRole('USER') and #id == principal.getId()")
     public @ResponseBody ResponseEntity changePasswordPOST(@PathVariable("id") long id, @RequestPart String password) {
         UserDetails userDetails = getUserDetails();
@@ -198,7 +198,7 @@ public class RestUserController {
         return new ResponseEntity(HttpStatus.OK);
     }
 
-    @RequestMapping(value = "/user/{id}/edit/email", method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = "application/json")
+    @RequestMapping(value = "user/{id}/edit/email", method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = "application/json")
     @PreAuthorize("hasRole('USER') and #id == principal.getId()")
     public @ResponseBody ResponseEntity changeEmailPOST(@PathVariable("id") long id, @RequestPart String email) {
         UserDetails userDetails = getUserDetails();
@@ -218,7 +218,7 @@ public class RestUserController {
                 .body(user);
     }
 
-    @RequestMapping(value = "/u/{username}", method = RequestMethod.GET)
+    @RequestMapping(value = "u/{username}", method = RequestMethod.GET)
     public ResponseEntity<User> userPageGET(@PathVariable("username") String username) {
         Optional<User> user = userService.getUserByUsername(username);
 
