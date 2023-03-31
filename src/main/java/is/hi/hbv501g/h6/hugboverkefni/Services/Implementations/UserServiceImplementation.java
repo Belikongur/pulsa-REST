@@ -47,7 +47,7 @@ public class UserServiceImplementation implements UserService {
      * @return User
      */
     public User getAnon() {
-        Optional<User> anon = userRepository.findById(1L);
+        Optional<User> anon = userRepository.findByUsername("Anon");
         return anon.get();
     }
 
