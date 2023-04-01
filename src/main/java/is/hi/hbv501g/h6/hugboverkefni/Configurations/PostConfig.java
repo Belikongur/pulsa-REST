@@ -66,6 +66,9 @@ public class PostConfig {
                     "test@test.com");
             Reply reply = new Reply(content2, user2, new ArrayList<Voter>(), new ArrayList<Reply>(), sub);
             Voter voter = new Voter(user, true);
+            Set<Role> user2Roles = new HashSet<>();
+            user2Roles.add(userRole);
+            user2.setRoles(user2Roles);
             userService.addDefaultUser(user2);
             replyRepository.save(reply);
             List<Reply> replies = new ArrayList<Reply>();
@@ -90,6 +93,13 @@ public class PostConfig {
                     new ArrayList<Voter>(),
                     new ArrayList<Reply>());
 
+            Set<Role> user1Roles = new HashSet<>();
+            user1Roles.add(userRole);
+            user.setRoles(user1Roles);
+
+            Set<Role> user3Roles = new HashSet<>();
+            user3Roles.add(userRole);
+            user3.setRoles(user3Roles);
             userService.addDefaultUser(user);
             userService.addDefaultUser(user3);
             postRepository.save(Jonathan);

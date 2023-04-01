@@ -43,6 +43,7 @@ public class RestPostController extends BaseController {
             System.out.println("post id: " + post.getPostId());
             System.out.println("sub slug: " + post.getSub().getSlug());
         });
+        System.out.println("POSTS KALLAÐ");
         return postService.getPostsOrderedByCreated();
     }
 
