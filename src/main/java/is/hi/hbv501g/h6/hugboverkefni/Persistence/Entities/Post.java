@@ -6,7 +6,7 @@ import javax.persistence.*;
 import java.util.List;
 
 @Entity
-@Table
+@Table(name="post")
 public class Post extends Message {
     @Id
     @SequenceGenerator(

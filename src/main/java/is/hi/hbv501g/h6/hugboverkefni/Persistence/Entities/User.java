@@ -1,5 +1,7 @@
 package is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import org.hibernate.annotations.Fetch;
 import org.springframework.data.repository.cdi.Eager;
 import org.springframework.security.core.GrantedAuthority;
@@ -56,12 +58,14 @@ public class User {
 
     @ManyToMany(fetch = FetchType.EAGER)
     private List<Sub> subs = new ArrayList<Sub>();
-    
-    @OneToMany
+
+    @OneToMany()
+    @JoinColumn(name="user_id")
+    @JsonManagedReference
     private List<Post> posts = new ArrayList<Post>();
 
-
     @OneToMany
+    @JoinColumn(name = "user_id")
     private List<Reply> replies = new ArrayList<Reply>();
     private LocalDateTime created;
     private LocalDateTime updated;
