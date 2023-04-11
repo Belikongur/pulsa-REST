@@ -18,7 +18,7 @@ public abstract class Message {
     private Content content;
     @ManyToOne(cascade = {CascadeType.MERGE})
     @JoinColumn(name = "user_id")
-    @JsonManagedReference
+    @JsonBackReference
     private User creator;
 
     @ManyToOne(cascade = {CascadeType.MERGE})
