@@ -38,13 +38,17 @@ public class RestPostController extends BaseController {
     @GetMapping
     public List<Post> findAllPosts() {
         List<Post> posts = postService.getPostsOrderedByCreated();
-        posts.forEach((post) -> {
-            System.out.println("title" + post.getTitle());
-            System.out.println("post id: " + post.getPostId());
-            System.out.println("sub slug: " + post.getSub().getSlug());
-        });
-        System.out.println("POSTS KALLAÐ");
-        return postService.getPostsOrderedByCreated();
+        
+        for (Post post : posts) {
+            post.getCreator().setPosts(new ArrayList<Post>());
+            post.getCreator().setReplies(new ArrayList<Reply>());
+            for (Voter voter : post.getVoted()) {
+                voter.getUser().setPosts(new ArrayList<Post>());
+                voter.getUser().setReplies(new ArrayList<Reply>());
+            }
+        }
+        
+        return posts;
     }
 
 
@@ -72,6 +76,12 @@ public class RestPostController extends BaseController {
         try {
             Post post = createPost(title, sub, text, image, audio, recording, user);
             postService.addNewPost(post);
+            post.getCreator().setPosts(new ArrayList<Post>());
+            post.getCreator().setReplies(new ArrayList<Reply>());
+            for (Voter voter : post.getVoted()) {
+                voter.getUser().setPosts(new ArrayList<Post>());
+                voter.getUser().setReplies(new ArrayList<Reply>());
+            }
 
             return ResponseEntity
                     .status(HttpStatus.CREATED)
@@ -118,6 +128,14 @@ public class RestPostController extends BaseController {
             replyService.addNewReply(reply);
             post.get().addReply(reply);
             postService.addNewPost(post.get());
+            
+            reply.getCreator().setPosts(new ArrayList<Post>());
+            reply.getCreator().setReplies(new ArrayList<Reply>());
+            for (Voter voter : reply.getVoted()) {
+                voter.getUser().setPosts(new ArrayList<Post>());
+                voter.getUser().setReplies(new ArrayList<Reply>());
+            }
+            
             return ResponseEntity
                     .status(HttpStatus.CREATED)
                     .body(reply);
@@ -168,6 +186,14 @@ public class RestPostController extends BaseController {
             replyService.addNewReply(reply);
             prevReply.get().addReply(reply);
             replyService.addNewReply(prevReply.get());
+            
+            reply.getCreator().setPosts(new ArrayList<Post>());
+            reply.getCreator().setReplies(new ArrayList<Reply>());
+            for (Voter voter : reply.getVoted()) {
+                voter.getUser().setPosts(new ArrayList<Post>());
+                voter.getUser().setReplies(new ArrayList<Reply>());
+            }
+            
             return ResponseEntity
                     .status(HttpStatus.CREATED)
                     .body(reply);
