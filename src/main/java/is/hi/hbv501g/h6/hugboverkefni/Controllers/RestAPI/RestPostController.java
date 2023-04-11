@@ -72,7 +72,9 @@ public class RestPostController extends BaseController {
         try {
             Post post = createPost(title, sub, text, image, audio, recording, user);
             postService.addNewPost(post);
-
+            System.out.println("POST ID: " + post.getPostId());
+            System.out.println("title: " + post.getTitle());
+            System.out.println("slug: " + post.getSub().getSlug());
             return ResponseEntity
                     .status(HttpStatus.CREATED)
                     .body(post);

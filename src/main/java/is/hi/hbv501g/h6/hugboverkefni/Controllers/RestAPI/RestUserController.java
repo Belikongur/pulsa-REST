@@ -127,7 +127,7 @@ public class RestUserController {
                         HttpHeaders.AUTHORIZATION,
                         jwt
                 )
-                .body(user);
+                .body(userDetails);
     }
 /*
     @RequestMapping(value = "/logout", method = RequestMethod.GET)
@@ -219,12 +219,10 @@ public class RestUserController {
     }
 
     @RequestMapping(value = "u/{username}", method = RequestMethod.GET)
-    public @ResponseBody ResponseEntity userPageGET(@PathVariable("username") String username) {
-        User user = userService.getUserObjectByUserName(username);
+    public ResponseEntity<User> userPageGET(@PathVariable("username") String username) {
+        Optional<User> user = userService.getUserByUsername(username);
 
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(user);
+        return new ResponseEntity<User>(user.get(), HttpStatus.OK);
     }
 
     public UserDetailsImplementation getUserDetails() {

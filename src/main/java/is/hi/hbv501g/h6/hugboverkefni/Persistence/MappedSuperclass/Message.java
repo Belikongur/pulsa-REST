@@ -1,7 +1,5 @@
 package is.hi.hbv501g.h6.hugboverkefni.Persistence.MappedSuperclass;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.*;
 
 import javax.persistence.*;
@@ -18,7 +16,6 @@ public abstract class Message {
     private Content content;
     @ManyToOne(cascade = {CascadeType.MERGE})
     @JoinColumn(name = "user_id")
-    @JsonBackReference
     private User creator;
 
     @ManyToOne(cascade = {CascadeType.MERGE})
