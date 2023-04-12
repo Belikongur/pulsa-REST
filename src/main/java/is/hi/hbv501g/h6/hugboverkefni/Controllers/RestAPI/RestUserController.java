@@ -1,8 +1,8 @@
 package is.hi.hbv501g.h6.hugboverkefni.Controllers.RestAPI;
 
+import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.*;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Repositories.RoleRepository;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Repositories.UserRepository;
-import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.UserDetailsImplementation;
 import is.hi.hbv501g.h6.hugboverkefni.Services.CloudinaryService;
 import is.hi.hbv501g.h6.hugboverkefni.Services.Implementations.PostServiceImplementation;
 import is.hi.hbv501g.h6.hugboverkefni.Services.Implementations.ReplyServiceImplementation;
@@ -24,9 +24,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.ERole;
-import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.Role;
-import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.User;
 
 import javax.validation.Valid;
 import java.util.*;
@@ -223,6 +220,21 @@ public class RestUserController {
         Optional<User> user = userService.getUserByUsername(username);
 
         return new ResponseEntity<User>(user.get(), HttpStatus.OK);
+    }
+    
+    @RequestMapping(value = "u/{username}/dataPosts", method = RequestMethod.GET)
+    public ResponseEntity<List<Post>> userPageDataPostsGET(@PathVariable("username") String username) {
+        Optional<User> user = userService.getUserByUsername(username);
+        List<Post> posts = user.get().getPosts();
+        return new ResponseEntity<List<Post>>(posts, HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "u/{username}/dataReplies", method = RequestMethod.GET)
+    public ResponseEntity<List<Reply>> userPageDataRepliesGET(@PathVariable("username") String username) {
+        Optional<User> user = userService.getUserByUsername(username);
+        List<Reply> replies = user.get().getReplies();
+        
+        return new ResponseEntity<List<Reply>>(replies, HttpStatus.OK);
     }
 
     public UserDetailsImplementation getUserDetails() {
