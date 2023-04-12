@@ -1,9 +1,7 @@
 package is.hi.hbv501g.h6.hugboverkefni.Services.Implementations;
 
-import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.Sub;
-import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.User;
+import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.*;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Repositories.UserRepository;
-import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.UserDetailsImplementation;
 import is.hi.hbv501g.h6.hugboverkefni.Services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
@@ -12,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.validation.BindingResult;
 
 import javax.validation.Validator;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -180,6 +179,20 @@ public class UserServiceImplementation implements UserService {
                 return exists.get();
         }
         return null;
+    }
+
+    @Override
+    public User prepareAndRinseUser(User user) {
+        for (Post post : user.getPosts()) {
+            post.getCreator().setPosts((List<Post>) new ArrayList<Post>());
+            post.getCreator().setReplies((List<Reply>) new ArrayList<Reply>());
+        }
+
+        for (Reply reply : user.getReplies()) {
+            reply.getCreator().setReplies((List<Reply>) new ArrayList<Reply>());
+        }
+
+        return user;
     }
 
     public User addSub(User user, Sub sub){

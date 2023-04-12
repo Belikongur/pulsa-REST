@@ -218,18 +218,21 @@ public class RestUserController {
     @RequestMapping(value = "u/{username}", method = RequestMethod.GET)
     public ResponseEntity<User> userPageGET(@PathVariable("username") String username) {
         Optional<User> theUser = userService.getUserByUsername(username);
-        
+
         if (!theUser.isPresent()) {
             User user = userService.getAnon();
             user.setPosts(postService.getPostsByUser(user));
             user.setReplies(replyService.getRepliesByUser(user));
+            user = userService.prepareAndRinseUser(user);
 
             return new ResponseEntity<User>(user, HttpStatus.OK);
         }
 
         User user = userService.getUserObjectByUserName(username);
+
         user.setPosts(postService.getPostsByUser(user));
         user.setReplies(replyService.getRepliesByUser(user));
+        user = userService.prepareAndRinseUser(user);
 
         return new ResponseEntity<User>(user, HttpStatus.OK);
     }
