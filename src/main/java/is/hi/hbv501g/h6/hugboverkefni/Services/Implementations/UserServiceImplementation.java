@@ -183,7 +183,7 @@ public class UserServiceImplementation implements UserService {
 
     @Override
     public User rinseUser(User user) {
-        User cleanUser = getUserObjectByUserName(user.getUsername());
+        User cleanUser = getUserObjectByUserName("test");
 
         List<Post> posts = user.getPosts();
         List<Reply> replies = user.getReplies();
