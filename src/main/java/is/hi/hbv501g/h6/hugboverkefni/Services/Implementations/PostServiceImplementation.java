@@ -1,6 +1,7 @@
 package is.hi.hbv501g.h6.hugboverkefni.Services.Implementations;
 
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.Post;
+import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.Reply;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.Sub;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.User;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Repositories.PostRepository;
@@ -8,6 +9,7 @@ import is.hi.hbv501g.h6.hugboverkefni.Services.PostService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,6 +41,25 @@ public class PostServiceImplementation implements PostService {
     @Override
     public List<Post> getPostsByUser(User user) {
         return postRepository.findByCreator(user);
+    }
+
+    @Override
+    public List<Post> getRinsedPostsByUser(User user) {
+        List<Post> posts = getPostsByUser(user);
+
+        for (int i = 0; i < posts.size(); i++) {
+            Post post = posts.get(i);
+            post.setReplies((List<Reply>) new ArrayList<Reply>());
+
+            User tempUser = post.getCreator();
+            tempUser.setPosts((List<Post>) new ArrayList<Post>());
+            tempUser.setReplies((List<Reply>) new ArrayList<Reply>());
+
+            post.setCreator(tempUser);
+            posts.set(i, post);
+        }
+
+        return posts;
     }
 
     /**

@@ -1,5 +1,6 @@
 package is.hi.hbv501g.h6.hugboverkefni.Services.Implementations;
 
+import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.Post;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.Reply;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Entities.User;
 import is.hi.hbv501g.h6.hugboverkefni.Persistence.Repositories.ReplyRepository;
@@ -7,6 +8,7 @@ import is.hi.hbv501g.h6.hugboverkefni.Services.ReplyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -49,6 +51,26 @@ public class ReplyServiceImplementation implements ReplyService {
     @Override
     public List<Reply> getRepliesByUser(User user) {
         return replyRepository.findByCreator(user);
+    }
+
+    @Override
+    public List<Reply> getRinsedRepliesByUser(User user) {
+        List<Reply> replies = getRepliesByUser(user);
+
+        for (int i = 0; i < replies.size(); i++) {
+            Reply reply = replies.get(i);
+            reply.setReplies((List<Reply>) new ArrayList<Reply>());
+
+            User tempUser = reply.getCreator();
+            tempUser.setPosts((List<Post>) new ArrayList<Post>());
+            tempUser.setReplies((List<Reply>) new ArrayList<Reply>());
+
+            reply.setCreator(tempUser);
+
+            replies.set(i, reply);
+        }
+
+        return replies;
     }
 
     /**

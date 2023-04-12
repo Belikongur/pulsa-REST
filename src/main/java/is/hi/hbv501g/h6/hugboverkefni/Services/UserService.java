@@ -40,6 +40,4 @@ public interface UserService {
     User editAvatar(User user);
 
     User loginUser(User user);
-
-    User prepareAndRinseUser(User user);
 }

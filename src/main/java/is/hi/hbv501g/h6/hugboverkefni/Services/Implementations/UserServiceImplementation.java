@@ -181,20 +181,6 @@ public class UserServiceImplementation implements UserService {
         return null;
     }
 
-    @Override
-    public User prepareAndRinseUser(User user) {
-        for (Post post : user.getPosts()) {
-            post.getCreator().setPosts((List<Post>) new ArrayList<Post>());
-            post.getCreator().setReplies((List<Reply>) new ArrayList<Reply>());
-        }
-
-        for (Reply reply : user.getReplies()) {
-            reply.getCreator().setReplies((List<Reply>) new ArrayList<Reply>());
-        }
-
-        return user;
-    }
-
     public User addSub(User user, Sub sub){
         List<Sub> subs = user.getSubs();
         subs.add(sub);
