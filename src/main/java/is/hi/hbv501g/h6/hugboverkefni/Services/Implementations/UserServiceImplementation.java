@@ -188,18 +188,18 @@ public class UserServiceImplementation implements UserService {
 
         for (Post post : posts) {
             User tempUser = post.getCreator();
-            tempUser.setPosts(new ArrayList<>());
-            tempUser.setReplies(new ArrayList<>());
+            tempUser.setPosts(null);
+            tempUser.setReplies(null);
             post.setCreator(tempUser);
-            post.setReplies(new ArrayList<>());
+            post.setReplies(null);
         }
 
         for (Reply reply : replies) {
             User tempUser = reply.getCreator();
-            tempUser.setPosts(new ArrayList<>());
-            tempUser.setReplies(new ArrayList<>());
+            tempUser.setPosts(null);
+            tempUser.setReplies(null);
             reply.setCreator(tempUser);
-            reply.setReplies(new ArrayList<>());
+            reply.setReplies(null);
         }
 
         user.setPosts(posts);
