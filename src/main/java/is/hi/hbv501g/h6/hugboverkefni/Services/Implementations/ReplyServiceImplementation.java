@@ -53,26 +53,6 @@ public class ReplyServiceImplementation implements ReplyService {
         return replyRepository.findByCreator(user);
     }
 
-    @Override
-    public List<Reply> getRinsedRepliesByUser(User user) {
-        List<Reply> replies = getRepliesByUser(user);
-
-        for (int i = 0; i < replies.size(); i++) {
-            Reply reply = replies.get(i);
-            reply.setReplies((List<Reply>) new ArrayList<Reply>());
-
-            User tempUser = reply.getCreator();
-            tempUser.setPosts((List<Post>) new ArrayList<Post>());
-            tempUser.setReplies((List<Reply>) new ArrayList<Reply>());
-
-            reply.setCreator(tempUser);
-
-            replies.set(i, reply);
-        }
-
-        return replies;
-    }
-
     /**
      * Adds Reply to database.
      * Has to contain Content object that is not empty

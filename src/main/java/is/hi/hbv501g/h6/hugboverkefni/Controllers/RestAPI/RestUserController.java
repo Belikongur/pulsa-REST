@@ -221,16 +221,19 @@ public class RestUserController {
 
         if (!theUser.isPresent()) {
             User user = userService.getAnon();
-            user.setPosts(postService.getRinsedPostsByUser(user));
-            user.setReplies(replyService.getRinsedRepliesByUser(user));
+
+            user.setPosts(postService.getPostsByUser(user));
+            user.setReplies(replyService.getRepliesByUser(user));
+            user = userService.rinseUser(user);
 
             return new ResponseEntity<User>(user, HttpStatus.OK);
         }
 
         User user = userService.getUserObjectByUserName(username);
 
-        user.setPosts(postService.getRinsedPostsByUser(user));
-        user.setReplies(replyService.getRinsedRepliesByUser(user));
+        user.setPosts(postService.getPostsByUser(user));
+        user.setReplies(replyService.getRepliesByUser(user));
+        user = userService.rinseUser(user);
 
         return new ResponseEntity<User>(user, HttpStatus.OK);
     }

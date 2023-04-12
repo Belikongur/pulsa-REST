@@ -20,8 +20,6 @@ public interface PostService {
 
     List<Post> getPostsByUser(User user);
 
-    List<Post> getRinsedPostsByUser(User user);
-
     Post editPost(Post post);
 
     List<Post> getPostsOrderedByCreated();

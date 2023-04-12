@@ -43,25 +43,6 @@ public class PostServiceImplementation implements PostService {
         return postRepository.findByCreator(user);
     }
 
-    @Override
-    public List<Post> getRinsedPostsByUser(User user) {
-        List<Post> posts = getPostsByUser(user);
-
-        for (int i = 0; i < posts.size(); i++) {
-            Post post = posts.get(i);
-            post.setReplies((List<Reply>) new ArrayList<Reply>());
-
-            User tempUser = post.getCreator();
-            tempUser.setPosts((List<Post>) new ArrayList<Post>());
-            tempUser.setReplies((List<Reply>) new ArrayList<Reply>());
-
-            post.setCreator(tempUser);
-            posts.set(i, post);
-        }
-
-        return posts;
-    }
-
     /**
      * Replaces Post in database
      *

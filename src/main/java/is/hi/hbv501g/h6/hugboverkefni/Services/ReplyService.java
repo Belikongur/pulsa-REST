@@ -15,8 +15,6 @@ public interface ReplyService {
 
     List<Reply> getRepliesByUser(User user);
 
-    List<Reply> getRinsedRepliesByUser(User user);
-
     Reply addNewReply(Reply reply);
 
     void deleteReply(Reply reply);
