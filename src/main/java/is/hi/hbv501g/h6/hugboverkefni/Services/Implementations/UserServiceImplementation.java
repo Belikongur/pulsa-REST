@@ -193,13 +193,13 @@ public class UserServiceImplementation implements UserService {
 
         for (Post post : posts) {
             post.setCreator(cleanUser);
-            post.setReplies(new ArrayList<Reply>());
+            post.setReplies(new ArrayList<>());
             newPosts.add(post);
         }
 
         for (Reply reply : replies) {
             reply.setCreator(cleanUser);
-            reply.setReplies(new ArrayList<Reply>());
+            reply.setReplies(new ArrayList<>());
             newReplies.add(reply);
         }
 

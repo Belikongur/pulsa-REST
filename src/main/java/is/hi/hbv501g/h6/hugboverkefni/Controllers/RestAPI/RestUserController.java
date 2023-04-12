@@ -224,18 +224,20 @@ public class RestUserController {
 
             user.setPosts(postService.getPostsByUser(user));
             user.setReplies(replyService.getRepliesByUser(user));
-            user = userService.rinseUser(user);
 
-            return new ResponseEntity<User>(user, HttpStatus.OK);
+            User newUser = userService.rinseUser(user);
+
+            return new ResponseEntity<User>(newUser, HttpStatus.OK);
         }
 
         User user = userService.getUserObjectByUserName(username);
 
         user.setPosts(postService.getPostsByUser(user));
         user.setReplies(replyService.getRepliesByUser(user));
-        user = userService.rinseUser(user);
 
-        return new ResponseEntity<User>(user, HttpStatus.OK);
+        User newUser = userService.rinseUser(user);
+
+        return new ResponseEntity<User>(newUser, HttpStatus.OK);
     }
 
     public UserDetailsImplementation getUserDetails() {
