@@ -217,24 +217,21 @@ public class RestUserController {
 
     @RequestMapping(value = "u/{username}", method = RequestMethod.GET)
     public ResponseEntity<User> userPageGET(@PathVariable("username") String username) {
-        Optional<User> user = userService.getUserByUsername(username);
-
-        return new ResponseEntity<User>(user.get(), HttpStatus.OK);
-    }
-    
-    @RequestMapping(value = "u/{username}/dataPosts", method = RequestMethod.GET)
-    public ResponseEntity<List<Post>> userPageDataPostsGET(@PathVariable("username") String username) {
-        Optional<User> user = userService.getUserByUsername(username);
-        List<Post> posts = user.get().getPosts();
-        return new ResponseEntity<List<Post>>(posts, HttpStatus.OK);
-    }
-
-    @RequestMapping(value = "u/{username}/dataReplies", method = RequestMethod.GET)
-    public ResponseEntity<List<Reply>> userPageDataRepliesGET(@PathVariable("username") String username) {
-        Optional<User> user = userService.getUserByUsername(username);
-        List<Reply> replies = user.get().getReplies();
+        Optional<User> theUser = userService.getUserByUsername(username);
         
-        return new ResponseEntity<List<Reply>>(replies, HttpStatus.OK);
+        if (!theUser.isPresent()) {
+            User user = userService.getAnon();
+            user.setPosts(postService.getPostsByUser(user));
+            user.setReplies(replyService.getRepliesByUser(user));
+
+            return new ResponseEntity<User>(user, HttpStatus.OK);
+        }
+
+        User user = userService.getUserObjectByUserName(username);
+        user.setPosts(postService.getPostsByUser(user));
+        user.setReplies(replyService.getRepliesByUser(user));
+
+        return new ResponseEntity<User>(user, HttpStatus.OK);
     }
 
     public UserDetailsImplementation getUserDetails() {
