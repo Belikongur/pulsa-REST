@@ -183,28 +183,21 @@ public class UserServiceImplementation implements UserService {
 
     @Override
     public User rinseUser(User user) {
-        User cleanUser = getUserObjectByUserName("test");
-
         List<Post> posts = user.getPosts();
         List<Reply> replies = user.getReplies();
 
-        List<Post> newPosts = new ArrayList<>();
-        List<Reply> newReplies = new ArrayList<>();
-
         for (Post post : posts) {
-            post.setCreator(cleanUser);
-            post.setReplies(new ArrayList<>());
-            newPosts.add(post);
+            post.setCreator(null);
+            post.setReplies(null);
         }
 
         for (Reply reply : replies) {
-            reply.setCreator(cleanUser);
-            reply.setReplies(new ArrayList<>());
-            newReplies.add(reply);
+            reply.setCreator(null);
+            reply.setReplies(null);
         }
 
-        user.setPosts(newPosts);
-        user.setReplies(newReplies);
+        user.setPosts(posts);
+        user.setReplies(replies);
 
         return user;
     }
